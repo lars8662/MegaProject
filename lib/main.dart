@@ -39,10 +39,8 @@ ThemeData _buildTheme() {
     seedColor: accent,
     brightness: Brightness.dark,
   ).copyWith(
-    background: background,
     surface: surface,
     onSurface: onSurface,
-    onBackground: onSurface,
     primary: accent,
     secondary: accent,
   );
@@ -56,7 +54,7 @@ ThemeData _buildTheme() {
       bodyColor: onSurface,
       displayColor: onSurface,
     ),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: surface,
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
