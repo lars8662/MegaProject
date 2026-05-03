@@ -1,0 +1,76 @@
+name: Android Debug Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  android-debug:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Flutter stable
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Regenerate Android platform files
+        run: |
+          set -euo pipefail
+
+          # Keep the application code and dependencies from the PR branch.
+          mkdir -p /tmp/climbing_diary_keep
+          cp pubspec.yaml /tmp/climbing_diary_keep/pubspec.yaml
+          cp analysis_options.yaml /tmp/climbing_diary_keep/analysis_options.yaml
+          cp -R lib /tmp/climbing_diary_keep/lib
+          cp -R test /tmp/climbing_diary_keep/test
+
+          # Generate a fresh Android platform folder with the current Flutter SDK.
+          rm -rf android
+          flutter create --platforms=android --org com.zalim --project-name climbing_diary --overwrite .
+
+          # Restore the PR app code that flutter create may overwrite.
+          cp /tmp/climbing_diary_keep/pubspec.yaml pubspec.yaml
+          cp /tmp/climbing_diary_keep/analysis_options.yaml analysis_options.yaml
+          rm -rf lib test
+          cp -R /tmp/climbing_diary_keep/lib lib
+          cp -R /tmp/climbing_diary_keep/test test
+
+          # Use the requested compact application id instead of Flutter's default underscore package.
+          find android -type f \( -name "*.gradle" -o -name "*.kts" -o -name "*.xml" -o -name "*.kt" \) -print0 \
+            | xargs -0 sed -i "s/com.zalim.climbing_diary/com.zalim.climbingdiary/g"
+
+          rm -rf android/app/src/main/kotlin/com/zalim/climbing_diary
+          mkdir -p android/app/src/main/kotlin/com/zalim/climbingdiary
+          cat > android/app/src/main/kotlin/com/zalim/climbingdiary/MainActivity.kt <<'EOF'
+          package com.zalim.climbingdiary
+
+          import io.flutter.embedding.android.FlutterActivity
+
+          class MainActivity : FlutterActivity()
+          EOF
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Build debug APK
+        run: flutter build apk --debug
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug.apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
