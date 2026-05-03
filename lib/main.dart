@@ -101,7 +101,7 @@ class AppShell extends StatelessWidget {
     final currentIndex = _indexFromLocation(location);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Climbing Diary')),
+      appBar: AppBar(title: const Text('Дневник скалолаза')),
       body: SafeArea(child: child),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: currentIndex,
