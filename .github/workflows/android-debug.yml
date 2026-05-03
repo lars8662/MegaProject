@@ -26,16 +26,29 @@ jobs:
 
       - name: Regenerate Android platform files
         run: |
+          set -euo pipefail
+
+          # Keep the application code and dependencies from the PR branch.
+          mkdir -p /tmp/climbing_diary_keep
+          cp pubspec.yaml /tmp/climbing_diary_keep/pubspec.yaml
+          cp analysis_options.yaml /tmp/climbing_diary_keep/analysis_options.yaml
+          cp -R lib /tmp/climbing_diary_keep/lib
+          cp -R test /tmp/climbing_diary_keep/test
+
+          # Generate a fresh Android platform folder with the current Flutter SDK.
           rm -rf android
           flutter create --platforms=android --org com.zalim --project-name climbing_diary --overwrite .
 
-          if [ -f android/app/build.gradle ]; then
-            sed -i "s/com.zalim.climbing_diary/com.zalim.climbingdiary/g" android/app/build.gradle
-          fi
+          # Restore the PR app code that flutter create may overwrite.
+          cp /tmp/climbing_diary_keep/pubspec.yaml pubspec.yaml
+          cp /tmp/climbing_diary_keep/analysis_options.yaml analysis_options.yaml
+          rm -rf lib test
+          cp -R /tmp/climbing_diary_keep/lib lib
+          cp -R /tmp/climbing_diary_keep/test test
 
-          if [ -f android/app/build.gradle.kts ]; then
-            sed -i "s/com.zalim.climbing_diary/com.zalim.climbingdiary/g" android/app/build.gradle.kts
-          fi
+          # Use the requested compact application id instead of Flutter's default underscore package.
+          find android -type f \( -name "*.gradle" -o -name "*.kts" -o -name "*.xml" -o -name "*.kt" \) -print0 \
+            | xargs -0 sed -i "s/com.zalim.climbing_diary/com.zalim.climbingdiary/g"
 
           rm -rf android/app/src/main/kotlin/com/zalim/climbing_diary
           mkdir -p android/app/src/main/kotlin/com/zalim/climbingdiary
