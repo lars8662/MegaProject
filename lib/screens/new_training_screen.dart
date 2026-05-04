@@ -19,69 +19,86 @@ class NewTrainingScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).padding.bottom;
 
-    return ListView(
-      padding: EdgeInsets.fromLTRB(16, 8, 16, 22 + bottomInset),
-      children: [
-        Row(
+    return Scaffold(
+      backgroundColor: const Color(0xFF1A1D20),
+      body: SafeArea(
+        child: ListView(
+          padding: EdgeInsets.fromLTRB(16, 10, 16, 24 + bottomInset),
           children: [
-            _BackButton(onTap: () => context.go('/home')),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Новая тренировка',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 28,
-                      height: 1.05,
-                    ),
+            const Text(
+              'Дневник скалолаза',
+              style: TextStyle(
+                color: Color(0xFFF6F1E8),
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
               ),
             ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                _BackButton(onTap: () => context.go('/home')),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Text(
+                        'Новая тренировка',
+                        style: TextStyle(
+                          color: Color(0xFFF6F1E8),
+                          fontSize: 31,
+                          fontWeight: FontWeight.w900,
+                          height: 1,
+                        ),
+                      ),
+                      SizedBox(height: 6),
+                      Text(
+                        'Ключевые детали сессии.',
+                        style: TextStyle(color: Color(0xB3F6F1E8), fontSize: 14, fontWeight: FontWeight.w700),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _SectionCard(
+              title: 'Тип тренировки',
+              child: GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _types.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                  childAspectRatio: 1.42,
+                ),
+                itemBuilder: (context, index) => _TypeTile(type: _types[index]),
+              ),
+            ),
+            const SizedBox(height: 12),
+            const _SectionCard(
+              title: 'Основное',
+              child: Column(
+                children: [
+                  _InputRow(icon: Icons.calendar_today_rounded, label: 'Дата', value: 'Сегодня, 3 мая'),
+                  SizedBox(height: 8),
+                  _InputRow(icon: Icons.timer_outlined, label: 'Длительность', value: '120 мин'),
+                  SizedBox(height: 8),
+                  _InputRow(icon: Icons.location_on_outlined, label: 'Место', value: 'Скалодром…'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            const _IntensityCard(),
+            const SizedBox(height: 12),
+            const _NotesCard(),
+            const SizedBox(height: 16),
+            _SaveButton(onTap: () {}),
           ],
         ),
-        const SizedBox(height: 6),
-        const Padding(
-          padding: EdgeInsets.only(left: 54),
-          child: Text(
-            'Заполните ключевые детали сессии.',
-            style: TextStyle(color: Color(0xB3F6F1E8), fontSize: 14, fontWeight: FontWeight.w600),
-          ),
-        ),
-        const SizedBox(height: 16),
-        _SectionCard(
-          title: 'Тип тренировки',
-          child: GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _types.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
-              childAspectRatio: 1.28,
-            ),
-            itemBuilder: (context, index) => _TypeTile(type: _types[index]),
-          ),
-        ),
-        const SizedBox(height: 12),
-        const _SectionCard(
-          title: 'Основное',
-          child: Column(
-            children: [
-              _InputRow(icon: Icons.calendar_today_rounded, label: 'Дата', value: 'Сегодня, 3 мая'),
-              SizedBox(height: 10),
-              _InputRow(icon: Icons.timer_outlined, label: 'Длительность', value: '120 мин'),
-              SizedBox(height: 10),
-              _InputRow(icon: Icons.location_on_outlined, label: 'Место', value: 'Скалодром…'),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        const _IntensityCard(),
-        const SizedBox(height: 12),
-        const _NotesCard(),
-        const SizedBox(height: 16),
-        _SaveButton(onTap: () {}),
-      ],
+      ),
     );
   }
 }
@@ -97,14 +114,14 @@ class _BackButton extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(22),
       child: Container(
-        width: 42,
-        height: 42,
+        width: 44,
+        height: 44,
         decoration: BoxDecoration(
           color: const Color(0xFF252A2F),
           borderRadius: BorderRadius.circular(22),
           border: Border.all(color: const Color(0x164C5560)),
         ),
-        child: const Icon(Icons.arrow_back_rounded, color: Color(0xFFF6F1E8), size: 22),
+        child: const Icon(Icons.arrow_back_rounded, color: Color(0xFFF6F1E8), size: 24),
       ),
     );
   }
@@ -155,7 +172,7 @@ class _TypeTile extends StatelessWidget {
     final selected = type.selected;
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: selected ? const Color(0xFF343039) : const Color(0xFF20252A),
         borderRadius: BorderRadius.circular(16),
@@ -170,14 +187,14 @@ class _TypeTile extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(type.icon, color: selected ? const Color(0xFFD4AF37) : const Color(0x99F6F1E8), size: 24),
-          const SizedBox(height: 8),
+          Icon(type.icon, color: selected ? const Color(0xFFD4AF37) : const Color(0x99F6F1E8), size: 22),
+          const SizedBox(height: 7),
           Text(
             type.label,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: selected ? const Color(0xFFF6F1E8) : const Color(0xB3F6F1E8),
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -197,7 +214,7 @@ class _InputRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
       decoration: BoxDecoration(
         color: const Color(0xFF171A1E),
         borderRadius: BorderRadius.circular(14),
