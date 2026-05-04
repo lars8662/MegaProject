@@ -11,10 +11,10 @@ class TimersScreen extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final timerSize = (constraints.maxWidth * 0.64).clamp(220.0, 270.0);
+        final timerSize = (constraints.maxWidth * 0.54).clamp(205.0, 232.0);
 
         return SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(18, 12, 18, 120 + bottomInset),
+          padding: EdgeInsets.fromLTRB(18, 8, 18, 18 + bottomInset),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -22,27 +22,27 @@ class TimersScreen extends StatelessWidget {
                 'Таймер',
                 style: TextStyle(
                   color: Color(0xFFF6F1E8),
-                  fontSize: 32,
+                  fontSize: 28,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.1,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
               const Text(
                 'Фингерборд / Repeaters',
                 style: TextStyle(
                   color: Color(0xB3F6F1E8),
-                  fontSize: 17,
+                  fontSize: 15,
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 10),
               Center(child: _PremiumTimer(size: timerSize)),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
               const _StatusCard(),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               const _ControlsRow(),
-              const SizedBox(height: 22),
+              const SizedBox(height: 14),
               const _BottomActions(),
             ],
           ),
@@ -66,21 +66,21 @@ class _PremiumTimer extends StatelessWidget {
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: Color(0x48D4AF37),
-            blurRadius: 34,
+            color: Color(0x40D4AF37),
+            blurRadius: 30,
             spreadRadius: 1,
           ),
           BoxShadow(
-            color: Color(0x66000000),
-            blurRadius: 24,
-            offset: Offset(0, 14),
+            color: Color(0x59000000),
+            blurRadius: 20,
+            offset: Offset(0, 11),
           ),
         ],
       ),
       child: CustomPaint(
         painter: _RingPainter(progress: 0.78),
         child: Container(
-          margin: const EdgeInsets.all(17),
+          margin: const EdgeInsets.all(15),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: const LinearGradient(
@@ -88,7 +88,7 @@ class _PremiumTimer extends StatelessWidget {
               end: Alignment.bottomRight,
               colors: [Color(0xFF222A35), Color(0xFF151A22)],
             ),
-            border: Border.all(color: const Color(0xFF303746), width: 1.2),
+            border: Border.all(color: const Color(0xFF303746), width: 1.1),
           ),
           child: const Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -97,17 +97,17 @@ class _PremiumTimer extends StatelessWidget {
                 'ВИС',
                 style: TextStyle(
                   color: Color(0xB3F6F1E8),
-                  fontSize: 16,
+                  fontSize: 14,
                   fontWeight: FontWeight.w800,
-                  letterSpacing: 1.8,
+                  letterSpacing: 1.6,
                 ),
               ),
-              SizedBox(height: 9),
+              SizedBox(height: 7),
               Text(
                 '00:07',
                 style: TextStyle(
                   color: Color(0xFFF6F1E8),
-                  fontSize: 54,
+                  fontSize: 48,
                   fontWeight: FontWeight.w800,
                   height: 1,
                 ),
@@ -127,7 +127,7 @@ class _RingPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    const stroke = 14.0;
+    const stroke = 12.0;
     final center = size.center(Offset.zero);
     final radius = (size.width / 2) - stroke / 2;
 
@@ -165,10 +165,10 @@ class _StatusCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(18, 15, 18, 16),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 13),
       decoration: BoxDecoration(
         color: const Color(0xFF252A2F),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: const Color(0x224C5560), width: 1.2),
       ),
       child: const Column(
@@ -178,34 +178,34 @@ class _StatusCard extends StatelessWidget {
             'Следующий этап',
             style: TextStyle(
               color: Color(0x99F6F1E8),
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          SizedBox(height: 5),
-          Text(
-            'ОТДЫХ: 00:03',
-            style: TextStyle(
-              color: Color(0xFFF6F1E8),
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          SizedBox(height: 12),
-          Text(
-            'Прогресс',
-            style: TextStyle(
-              color: Color(0x99F6F1E8),
               fontSize: 13,
               fontWeight: FontWeight.w600,
             ),
           ),
-          SizedBox(height: 4),
+          SizedBox(height: 3),
+          Text(
+            'ОТДЫХ: 00:03',
+            style: TextStyle(
+              color: Color(0xFFF6F1E8),
+              fontSize: 19,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Прогресс',
+            style: TextStyle(
+              color: Color(0x99F6F1E8),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: 2),
           Text(
             'Сет 3 из 6',
             style: TextStyle(
               color: Color(0xFFF6F1E8),
-              fontSize: 16,
+              fontSize: 15,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -223,11 +223,11 @@ class _ControlsRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: const [
-        _RoundControl(icon: Icons.restart_alt_rounded, size: 60),
-        SizedBox(width: 26),
-        _RoundControl(icon: Icons.pause_rounded, size: 88, isPrimary: true),
-        SizedBox(width: 26),
-        _RoundControl(icon: Icons.play_arrow_rounded, size: 60),
+        _RoundControl(icon: Icons.restart_alt_rounded, size: 54),
+        SizedBox(width: 24),
+        _RoundControl(icon: Icons.pause_rounded, size: 78, isPrimary: true),
+        SizedBox(width: 24),
+        _RoundControl(icon: Icons.play_arrow_rounded, size: 54),
       ],
     );
   }
@@ -255,20 +255,20 @@ class _RoundControl extends StatelessWidget {
         boxShadow: [
           if (isPrimary)
             const BoxShadow(
-              color: Color(0x5CD4AF37),
-              blurRadius: 24,
+              color: Color(0x50D4AF37),
+              blurRadius: 22,
               spreadRadius: 1,
             ),
           const BoxShadow(
-            color: Color(0x44000000),
-            blurRadius: 12,
-            offset: Offset(0, 8),
+            color: Color(0x3D000000),
+            blurRadius: 10,
+            offset: Offset(0, 7),
           ),
         ],
       ),
       child: Icon(
         icon,
-        size: isPrimary ? 42 : 30,
+        size: isPrimary ? 38 : 28,
         color: isPrimary ? const Color(0xFF1A1D20) : const Color(0xFFF6F1E8),
       ),
     );
@@ -284,14 +284,14 @@ class _BottomActions extends StatelessWidget {
       children: [
         Expanded(
           child: SizedBox(
-            height: 52,
+            height: 46,
             child: OutlinedButton(
               onPressed: () {},
               style: OutlinedButton.styleFrom(
                 foregroundColor: const Color(0xFFF6F1E8),
                 side: const BorderSide(color: Color(0x334C5560), width: 1.2),
                 backgroundColor: const Color(0xFF252A2F),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
               ),
               child: const Text('Пропустить'),
             ),
@@ -300,14 +300,14 @@ class _BottomActions extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: SizedBox(
-            height: 52,
+            height: 46,
             child: OutlinedButton(
               onPressed: () {},
               style: OutlinedButton.styleFrom(
                 foregroundColor: const Color(0xFFE7B2B2),
                 side: const BorderSide(color: Color(0x66A85E5E), width: 1.2),
                 backgroundColor: const Color(0xFF252A2F),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
               ),
               child: const Text('Завершить'),
             ),
