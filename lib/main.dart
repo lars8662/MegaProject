@@ -101,7 +101,20 @@ class AppShell extends StatelessWidget {
     final currentIndex = _indexFromLocation(location);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Дневник скалолаза')),
+      appBar: AppBar(
+        titleSpacing: 18,
+        toolbarHeight: 58,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+        backgroundColor: const Color(0xE61A1D20),
+        title: const Text('Дневник скалолаза'),
+        titleTextStyle: Theme.of(context).textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.w600,
+          color: const Color(0xFFF6F1E8),
+          letterSpacing: 0.15,
+        ),
+      ),
       body: SafeArea(child: child),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: currentIndex,
