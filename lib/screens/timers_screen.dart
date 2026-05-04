@@ -43,8 +43,8 @@ class TimersScreen extends StatelessWidget {
           const SizedBox(height: 24),
           const _TimerControls(accent: accent),
           const SizedBox(height: 28),
-          Row(
-            children: const [
+          const Row(
+            children: [
               Expanded(child: _BottomActionButton(label: 'Пропустить')),
               SizedBox(width: 12),
               Expanded(child: _BottomActionButton(label: 'Завершить')),
@@ -242,7 +242,7 @@ class _TimerControls extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        _SmallControlButton(icon: Icons.restart_alt_rounded, onTap: () {}),
+        const _SmallControlButton(icon: Icons.restart_alt_rounded),
         Container(
           width: 94,
           height: 94,
@@ -268,17 +268,16 @@ class _TimerControls extends StatelessWidget {
             icon: const Icon(Icons.pause_rounded),
           ),
         ),
-        _SmallControlButton(icon: Icons.play_arrow_rounded, onTap: () {}),
+        const _SmallControlButton(icon: Icons.play_arrow_rounded),
       ],
     );
   }
 }
 
 class _SmallControlButton extends StatelessWidget {
-  const _SmallControlButton({required this.icon, required this.onTap});
+  const _SmallControlButton({required this.icon});
 
   final IconData icon;
-  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -291,7 +290,7 @@ class _SmallControlButton extends StatelessWidget {
         border: Border.all(color: const Color(0x1FFFFFFF)),
       ),
       child: IconButton(
-        onPressed: onTap,
+        onPressed: () {},
         icon: Icon(icon, color: const Color(0xFFF6F1E8), size: 30),
       ),
     );
