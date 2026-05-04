@@ -72,6 +72,7 @@ ThemeData _buildTheme() {
 final _router = GoRouter(
   initialLocation: '/home',
   routes: [
+    GoRoute(path: '/new-training', pageBuilder: (context, state) => const NoTransitionPage(child: NewTrainingScreen())),
     ShellRoute(
       builder: (context, state, child) => AppShell(child: child),
       routes: [
@@ -80,7 +81,6 @@ final _router = GoRouter(
         GoRoute(path: '/timers', pageBuilder: (context, state) => const NoTransitionPage(child: TimersScreen())),
         GoRoute(path: '/progress', pageBuilder: (context, state) => const NoTransitionPage(child: ProgressScreen())),
         GoRoute(path: '/profile', pageBuilder: (context, state) => const NoTransitionPage(child: ProfileScreen())),
-        GoRoute(path: '/new-training', pageBuilder: (context, state) => const NoTransitionPage(child: NewTrainingScreen())),
       ],
     ),
   ],
