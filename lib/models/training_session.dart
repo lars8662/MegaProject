@@ -52,7 +52,7 @@ class TrainingSession {
       return '${hours}ч';
     }
 
-    return '${hours}ч ${minutes}мин';
+    return '${hours}ч $minutesмин';
   }
 
   String get detail {
