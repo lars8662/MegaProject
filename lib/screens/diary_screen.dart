@@ -68,14 +68,14 @@ class _DiaryScreenState extends State<DiaryScreen> {
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: _filters.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 8),
+            separatorBuilder: (context, index) => const SizedBox(width: 8),
             itemBuilder: (context, index) {
               final filter = _filters[index];
               final selected = filter == _selectedFilter;
               return ChoiceChip(
                 label: Text(filter),
                 selected: selected,
-                onSelected: (_) => setState(() => _selectedFilter = filter),
+                onSelected: (isSelected) => setState(() => _selectedFilter = filter),
                 labelStyle: textTheme.labelMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: selected ? const Color(0xFF1A1D20) : const Color(0xFFF6F1E8).withValues(alpha: 0.82),
