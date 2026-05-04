@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../components/buttons.dart';
 
@@ -53,7 +54,7 @@ class HomeScreen extends StatelessWidget {
           itemBuilder: (context, index) => _DashboardMetricCard(item: _metrics[index]),
         ),
         const SizedBox(height: 12),
-        PrimaryButton(label: '+ Новая тренировка', onPressed: () {}),
+        PrimaryButton(label: '+ Новая тренировка', onPressed: () => context.go('/new-training')),
       ],
     );
   }

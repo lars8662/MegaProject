@@ -7,6 +7,7 @@ import 'components/buttons.dart';
 import 'components/metric_card.dart';
 import 'screens/diary_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/new_training_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/progress_screen.dart';
 import 'screens/timers_screen.dart';
@@ -71,6 +72,7 @@ ThemeData _buildTheme() {
 final _router = GoRouter(
   initialLocation: '/home',
   routes: [
+    GoRoute(path: '/new-training', pageBuilder: (context, state) => const NoTransitionPage(child: NewTrainingScreen())),
     ShellRoute(
       builder: (context, state, child) => AppShell(child: child),
       routes: [
