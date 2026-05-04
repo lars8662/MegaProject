@@ -3,17 +3,45 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-class NewTrainingScreen extends StatelessWidget {
+class NewTrainingScreen extends StatefulWidget {
   const NewTrainingScreen({super.key});
 
+  @override
+  State<NewTrainingScreen> createState() => _NewTrainingScreenState();
+}
+
+class _NewTrainingScreenState extends State<NewTrainingScreen> {
   static const _types = [
-    _TrainingType('Боулдеринг', Icons.landscape_rounded, true),
-    _TrainingType('Трудность', Icons.route_rounded, false),
-    _TrainingType('Фингерборд', Icons.back_hand_rounded, false),
-    _TrainingType('Силовая', Icons.fitness_center_rounded, false),
-    _TrainingType('ОФП', Icons.accessibility_new_rounded, false),
-    _TrainingType('Восстановление', Icons.spa_rounded, false),
+    _TrainingType('Боулдеринг', Icons.landscape_rounded),
+    _TrainingType('Трудность', Icons.route_rounded),
+    _TrainingType('Фингерборд', Icons.back_hand_rounded),
+    _TrainingType('Силовая', Icons.fitness_center_rounded),
+    _TrainingType('ОФП', Icons.accessibility_new_rounded),
+    _TrainingType('Восстановление', Icons.spa_rounded),
   ];
+
+  static const _efforts = ['Легко', 'Норма', 'Тяжело'];
+
+  int _selectedTypeIndex = 0;
+  int _intensity = 7;
+  String _selectedEffort = 'Норма';
+
+  void _saveTraining() {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: const Color(0xFF252A2F),
+          content: Text(
+            'Тренировка “${_types[_selectedTypeIndex].label}” сохранена. Хранение подключим следующим этапом.',
+            style: const TextStyle(color: Color(0xFFF6F1E8), fontWeight: FontWeight.w700),
+          ),
+        ),
+      );
+
+    context.go('/diary');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +102,11 @@ class NewTrainingScreen extends StatelessWidget {
                   mainAxisSpacing: 8,
                   childAspectRatio: 1.42,
                 ),
-                itemBuilder: (context, index) => _TypeTile(type: _types[index]),
+                itemBuilder: (context, index) => _TypeTile(
+                  type: _types[index],
+                  selected: _selectedTypeIndex == index,
+                  onTap: () => setState(() => _selectedTypeIndex = index),
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -91,11 +123,17 @@ class NewTrainingScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            const _IntensityCard(),
+            _IntensityCard(
+              intensity: _intensity,
+              selectedEffort: _selectedEffort,
+              efforts: _efforts,
+              onIntensityChanged: (value) => setState(() => _intensity = value.round()),
+              onEffortChanged: (effort) => setState(() => _selectedEffort = effort),
+            ),
             const SizedBox(height: 12),
             const _NotesCard(),
             const SizedBox(height: 16),
-            _SaveButton(onTap: () {}),
+            _SaveButton(onTap: _saveTraining),
           ],
         ),
       ),
@@ -163,42 +201,47 @@ class _SectionCard extends StatelessWidget {
 }
 
 class _TypeTile extends StatelessWidget {
-  const _TypeTile({required this.type});
+  const _TypeTile({required this.type, required this.selected, required this.onTap});
 
   final _TrainingType type;
+  final bool selected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final selected = type.selected;
-
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: selected ? const Color(0xFF343039) : const Color(0xFF20252A),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: selected ? const Color(0xFFD4AF37) : const Color(0x144C5560),
-          width: selected ? 1.4 : 1,
-        ),
-        boxShadow: selected
-            ? const [BoxShadow(color: Color(0x20D4AF37), blurRadius: 16, offset: Offset(0, 8))]
-            : null,
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(type.icon, color: selected ? const Color(0xFFD4AF37) : const Color(0x99F6F1E8), size: 22),
-          const SizedBox(height: 7),
-          Text(
-            type.label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: selected ? const Color(0xFFF6F1E8) : const Color(0xB3F6F1E8),
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
-            ),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFF343039) : const Color(0xFF20252A),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: selected ? const Color(0xFFD4AF37) : const Color(0x144C5560),
+            width: selected ? 1.4 : 1,
           ),
-        ],
+          boxShadow: selected
+              ? const [BoxShadow(color: Color(0x20D4AF37), blurRadius: 16, offset: Offset(0, 8))]
+              : null,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(type.icon, color: selected ? const Color(0xFFD4AF37) : const Color(0x99F6F1E8), size: 22),
+            const SizedBox(height: 7),
+            Text(
+              type.label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: selected ? const Color(0xFFF6F1E8) : const Color(0xB3F6F1E8),
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -242,7 +285,19 @@ class _InputRow extends StatelessWidget {
 }
 
 class _IntensityCard extends StatelessWidget {
-  const _IntensityCard();
+  const _IntensityCard({
+    required this.intensity,
+    required this.selectedEffort,
+    required this.efforts,
+    required this.onIntensityChanged,
+    required this.onEffortChanged,
+  });
+
+  final int intensity;
+  final String selectedEffort;
+  final List<String> efforts;
+  final ValueChanged<double> onIntensityChanged;
+  final ValueChanged<String> onEffortChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -256,40 +311,53 @@ class _IntensityCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Expanded(
+              const Expanded(
                 child: Text(
                   'Интенсивность',
                   style: TextStyle(color: Color(0xFFF6F1E8), fontSize: 15, fontWeight: FontWeight.w800),
                 ),
               ),
-              Text('7/10', style: TextStyle(color: Color(0xFFD4AF37), fontSize: 20, fontWeight: FontWeight.w900)),
+              Text('$intensity/10', style: const TextStyle(color: Color(0xFFD4AF37), fontSize: 20, fontWeight: FontWeight.w900)),
             ],
           ),
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: const LinearProgressIndicator(
-              value: 0.7,
-              minHeight: 7,
-              backgroundColor: Color(0x334C5560),
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD4AF37)),
+          SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              activeTrackColor: const Color(0xFFD4AF37),
+              inactiveTrackColor: const Color(0x334C5560),
+              thumbColor: const Color(0xFFE4C052),
+              overlayColor: const Color(0x22D4AF37),
+              trackHeight: 7,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 18),
+            ),
+            child: Slider(
+              value: intensity.toDouble(),
+              min: 1,
+              max: 10,
+              divisions: 9,
+              onChanged: onIntensityChanged,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
           const Text(
             'Самочувствие',
             style: TextStyle(color: Color(0x99F6F1E8), fontSize: 13, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
-          const Row(
+          Row(
             children: [
-              Expanded(child: _EffortChip(label: 'Легко')),
-              SizedBox(width: 8),
-              Expanded(child: _EffortChip(label: 'Норма', selected: true)),
-              SizedBox(width: 8),
-              Expanded(child: _EffortChip(label: 'Тяжело')),
+              for (var i = 0; i < efforts.length; i++) ...[
+                Expanded(
+                  child: _EffortChip(
+                    label: efforts[i],
+                    selected: efforts[i] == selectedEffort,
+                    onTap: () => onEffortChanged(efforts[i]),
+                  ),
+                ),
+                if (i != efforts.length - 1) const SizedBox(width: 8),
+              ],
             ],
           ),
         ],
@@ -299,27 +367,33 @@ class _IntensityCard extends StatelessWidget {
 }
 
 class _EffortChip extends StatelessWidget {
-  const _EffortChip({required this.label, this.selected = false});
+  const _EffortChip({required this.label, required this.onTap, this.selected = false});
 
   final String label;
+  final VoidCallback onTap;
   final bool selected;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 42,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: selected ? const Color(0xFF343039) : const Color(0xFF171A1E),
-        borderRadius: BorderRadius.circular(13),
-        border: Border.all(color: selected ? const Color(0xFFD4AF37) : const Color(0x224C5560)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: selected ? const Color(0xFFD4AF37) : const Color(0xB3F6F1E8),
-          fontSize: 13,
-          fontWeight: FontWeight.w800,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(13),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        height: 42,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFF343039) : const Color(0xFF171A1E),
+          borderRadius: BorderRadius.circular(13),
+          border: Border.all(color: selected ? const Color(0xFFD4AF37) : const Color(0x224C5560)),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? const Color(0xFFD4AF37) : const Color(0xB3F6F1E8),
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+          ),
         ),
       ),
     );
@@ -376,9 +450,8 @@ class _SaveButton extends StatelessWidget {
 }
 
 class _TrainingType {
-  const _TrainingType(this.label, this.icon, this.selected);
+  const _TrainingType(this.label, this.icon);
 
   final String label;
   final IconData icon;
-  final bool selected;
 }
