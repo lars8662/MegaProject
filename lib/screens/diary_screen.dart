@@ -1,67 +1,141 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-class DiaryScreen extends StatelessWidget {
+import '../models/training_session.dart';
+import '../state/training_sessions_provider.dart';
+
+class DiaryScreen extends ConsumerWidget {
   const DiaryScreen({super.key});
 
+  static const _filters = ['Все', 'Боулдеринг', 'Трудность', 'ОФП', 'Фингерборд', 'Заметки'];
+
+  static const _mockWorkouts = [
+    _WorkoutEntry(
+      date: '3 мая 2026',
+      type: 'Боулдеринг · Зал «Куб»',
+      detail: 'Проекты V4–V5, прогресс на силовых стартах.',
+      meta: 'Комментарии: добавить видео разбора',
+      durationBadge: '1ч 45мин',
+    ),
+    _WorkoutEntry(
+      date: '1 мая 2026',
+      type: 'Силовая ОФП',
+      detail: 'Кор, плечи и стабилизация. Средняя нагрузка.',
+      meta: 'Самочувствие: нормальное',
+      durationBadge: '55 мин',
+    ),
+    _WorkoutEntry(
+      date: '29 апреля 2026',
+      type: 'Трудность · 6b+',
+      detail: 'Техническая сессия: ноги, длинные перехваты, контроль дыхания.',
+      meta: 'Нагрузка: тяжёлая',
+      durationBadge: '2ч 10мин',
+    ),
+  ];
+
   @override
-  Widget build(BuildContext context) {
-    const filters = ['Все', 'Боулдеринг', 'Трудность', 'ОФП', 'Фингерборд', 'Заметки'];
-    const workouts = [
-      _WorkoutEntry(
-        date: '12 мая 2026',
-        type: 'Трудность · Скалодром «Вектор»',
-        detail: '8 трасс, акцент на технику ног и длинные перехваты.',
-        meta: 'Самочувствие: бодрое',
-        durationBadge: '2ч 15мин',
-      ),
-      _WorkoutEntry(
-        date: '10 мая 2026',
-        type: 'Фингерборд · Интервалы',
-        detail: 'Протокол Repeaters, 6 подходов по 7/3.',
-        meta: 'Нагрузка: средняя',
-        durationBadge: 'Repeaters 7/3',
-      ),
-      _WorkoutEntry(
-        date: '8 мая 2026',
-        type: 'ОФП · Домашняя сессия',
-        detail: 'Кор и мобилити, работа на стабилизацию плеч.',
-        meta: 'Пульс: ровный',
-        durationBadge: '30 мин',
-      ),
-      _WorkoutEntry(
-        date: '6 мая 2026',
-        type: 'Боулдеринг · Зал «Куб»',
-        detail: 'Проекты V4–V5, прогресс на силовых стартах.',
-        meta: 'Комментарии: добавить видео разбора',
-      ),
-    ];
+  Widget build(BuildContext context, WidgetRef ref) {
+    final savedSessions = ref.watch(trainingSessionsProvider);
+    final savedEntries = savedSessions.map(_WorkoutEntry.fromSession).toList();
+    final workouts = [...savedEntries, ..._mockWorkouts];
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
       children: [
-        const Text(
-          'Тренировочный дневник',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Тренировочный дневник',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+                  ),
+                  SizedBox(height: 6),
+                  _DiarySubtitle(),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            _AddTrainingButton(onTap: () => context.go('/new-training')),
+          ],
         ),
-        const SizedBox(height: 6),
-        Text(
-          'Лента тренировок и заметок по самочувствию.',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: const Color(0xB3F6F1E8)),
-        ),
+        if (savedSessions.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text(
+            _savedCountLabel(savedSessions.length),
+            style: const TextStyle(color: Color(0xFFD4AF37), fontSize: 13, fontWeight: FontWeight.w800),
+          ),
+        ],
         const SizedBox(height: 14),
         SizedBox(
           height: 40,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.only(right: 20),
-            itemBuilder: (context, index) => _FilterChip(label: filters[index], isSelected: index == 0),
+            itemBuilder: (context, index) => _FilterChip(label: _filters[index], isSelected: index == 0),
             separatorBuilder: (context, index) => const SizedBox(width: 10),
-            itemCount: filters.length,
+            itemCount: _filters.length,
           ),
         ),
         const SizedBox(height: 14),
         ...workouts.map(_WorkoutCard.new),
       ],
+    );
+  }
+
+  static String _savedCountLabel(int count) {
+    if (count == 1) {
+      return '1 тренировка добавлена';
+    }
+
+    if (count >= 2 && count <= 4) {
+      return '$count тренировки добавлены';
+    }
+
+    return '$count тренировок добавлено';
+  }
+}
+
+class _DiarySubtitle extends ConsumerWidget {
+  const _DiarySubtitle();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final savedSessions = ref.watch(trainingSessionsProvider);
+
+    return Text(
+      savedSessions.isEmpty ? 'Лента тренировок и заметок по самочувствию.' : 'Свежие записи отображаются сверху списка.',
+      style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: const Color(0xB3F6F1E8)),
+    );
+  }
+}
+
+class _AddTrainingButton extends StatelessWidget {
+  const _AddTrainingButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: const Color(0xFFD4AF37),
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: const [
+            BoxShadow(color: Color(0x30D4AF37), blurRadius: 14, offset: Offset(0, 6)),
+          ],
+        ),
+        child: const Icon(Icons.add_rounded, color: Color(0xFF1A1D20), size: 26),
+      ),
     );
   }
 }
@@ -118,9 +192,9 @@ class _WorkoutCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF262B30),
+        color: entry.isSaved ? const Color(0xFF283038) : const Color(0xFF262B30),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0x334C5560)),
+        border: Border.all(color: entry.isSaved ? const Color(0x5CD4AF37) : const Color(0x334C5560)),
         boxShadow: const [
           BoxShadow(color: Color(0x22000000), blurRadius: 10, offset: Offset(0, 5)),
         ],
@@ -132,9 +206,19 @@ class _WorkoutCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: Text(
-                  entry.date,
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFFF6F1E8)),
+                child: Row(
+                  children: [
+                    if (entry.icon != null) ...[
+                      Icon(entry.icon, size: 16, color: const Color(0xFFD4AF37)),
+                      const SizedBox(width: 6),
+                    ],
+                    Expanded(
+                      child: Text(
+                        entry.date,
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFFF6F1E8)),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               if (entry.durationBadge != null) _DurationBadge(label: entry.durationBadge!),
@@ -191,11 +275,27 @@ class _WorkoutEntry {
     required this.detail,
     required this.meta,
     this.durationBadge,
+    this.icon,
+    this.isSaved = false,
   });
+
+  factory _WorkoutEntry.fromSession(TrainingSession session) {
+    return _WorkoutEntry(
+      date: session.formattedDate,
+      type: '${session.type} · ${session.location}',
+      detail: session.detail,
+      meta: session.meta,
+      durationBadge: session.durationLabel,
+      icon: session.icon,
+      isSaved: true,
+    );
+  }
 
   final String date;
   final String type;
   final String detail;
   final String meta;
   final String? durationBadge;
+  final IconData? icon;
+  final bool isSaved;
 }

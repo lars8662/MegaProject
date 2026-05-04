@@ -1,16 +1,20 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_declarations
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class NewTrainingScreen extends StatefulWidget {
+import '../models/training_session.dart';
+import '../state/training_sessions_provider.dart';
+
+class NewTrainingScreen extends ConsumerStatefulWidget {
   const NewTrainingScreen({super.key});
 
   @override
-  State<NewTrainingScreen> createState() => _NewTrainingScreenState();
+  ConsumerState<NewTrainingScreen> createState() => _NewTrainingScreenState();
 }
 
-class _NewTrainingScreenState extends State<NewTrainingScreen> {
+class _NewTrainingScreenState extends ConsumerState<NewTrainingScreen> {
   static const _types = [
     _TrainingType('Боулдеринг', Icons.landscape_rounded),
     _TrainingType('Трудность', Icons.route_rounded),
@@ -27,6 +31,21 @@ class _NewTrainingScreenState extends State<NewTrainingScreen> {
   String _selectedEffort = 'Норма';
 
   void _saveTraining() {
+    final selectedType = _types[_selectedTypeIndex].label;
+
+    final session = TrainingSession(
+      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      type: selectedType,
+      date: DateTime.now(),
+      durationMinutes: 120,
+      location: 'Скалодром',
+      intensity: _intensity,
+      effort: _selectedEffort,
+      notes: 'Новая запись: $selectedType, интенсивность $_intensity/10.',
+    );
+
+    ref.read(trainingSessionsProvider.notifier).addSession(session);
+
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
@@ -34,7 +53,7 @@ class _NewTrainingScreenState extends State<NewTrainingScreen> {
           behavior: SnackBarBehavior.floating,
           backgroundColor: const Color(0xFF252A2F),
           content: Text(
-            'Тренировка “${_types[_selectedTypeIndex].label}” сохранена. Хранение подключим следующим этапом.',
+            'Тренировка “$selectedType” добавлена в дневник.',
             style: const TextStyle(color: Color(0xFFF6F1E8), fontWeight: FontWeight.w700),
           ),
         ),
@@ -114,11 +133,11 @@ class _NewTrainingScreenState extends State<NewTrainingScreen> {
               title: 'Основное',
               child: Column(
                 children: [
-                  _InputRow(icon: Icons.calendar_today_rounded, label: 'Дата', value: 'Сегодня, 3 мая'),
+                  _InputRow(icon: Icons.calendar_today_rounded, label: 'Дата', value: 'Сегодня'),
                   SizedBox(height: 8),
                   _InputRow(icon: Icons.timer_outlined, label: 'Длительность', value: '120 мин'),
                   SizedBox(height: 8),
-                  _InputRow(icon: Icons.location_on_outlined, label: 'Место', value: 'Скалодром…'),
+                  _InputRow(icon: Icons.location_on_outlined, label: 'Место', value: 'Скалодром'),
                 ],
               ),
             ),
