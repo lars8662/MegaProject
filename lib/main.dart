@@ -74,11 +74,11 @@ final _router = GoRouter(
     ShellRoute(
       builder: (context, state, child) => AppShell(child: child),
       routes: [
-        GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
-        GoRoute(path: '/diary', builder: (context, state) => const DiaryScreen()),
-        GoRoute(path: '/timers', builder: (context, state) => const TimersScreen()),
-        GoRoute(path: '/progress', builder: (context, state) => const ProgressScreen()),
-        GoRoute(path: '/profile', builder: (context, state) => const ProfileScreen()),
+        GoRoute(path: '/home', pageBuilder: (context, state) => const NoTransitionPage(child: HomeScreen())),
+        GoRoute(path: '/diary', pageBuilder: (context, state) => const NoTransitionPage(child: DiaryScreen())),
+        GoRoute(path: '/timers', pageBuilder: (context, state) => const NoTransitionPage(child: TimersScreen())),
+        GoRoute(path: '/progress', pageBuilder: (context, state) => const NoTransitionPage(child: ProgressScreen())),
+        GoRoute(path: '/profile', pageBuilder: (context, state) => const NoTransitionPage(child: ProfileScreen())),
       ],
     ),
   ],
