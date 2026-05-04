@@ -55,7 +55,7 @@ class DiaryScreen extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.only(right: 20),
             itemBuilder: (context, index) => _FilterChip(label: filters[index], isSelected: index == 0),
-            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            separatorBuilder: (context, index) => const SizedBox(width: 10),
             itemCount: filters.length,
           ),
         ),
@@ -74,7 +74,7 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final selectedGradient = const LinearGradient(
+    const selectedGradient = LinearGradient(
       colors: [Color(0xFFE9C86D), Color(0xFFD4AF37)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
