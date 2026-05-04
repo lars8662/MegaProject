@@ -49,10 +49,10 @@ class TrainingSession {
     }
 
     if (minutes == 0) {
-      return '${hours}ч';
+      return hours.toString() + 'ч';
     }
 
-    return '${hours}ч $minutesмин';
+    return hours.toString() + 'ч ' + minutes.toString() + 'мин';
   }
 
   String get detail {
