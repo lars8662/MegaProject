@@ -12,6 +12,19 @@ class TrainingSession {
     required this.notes,
   });
 
+  factory TrainingSession.fromJson(Map<String, dynamic> json) {
+    return TrainingSession(
+      id: json['id'] as String? ?? DateTime.now().microsecondsSinceEpoch.toString(),
+      type: json['type'] as String? ?? 'Боулдеринг',
+      date: DateTime.tryParse(json['date'] as String? ?? '') ?? DateTime.now(),
+      durationMinutes: json['durationMinutes'] as int? ?? 0,
+      location: json['location'] as String? ?? 'Скалодром',
+      intensity: json['intensity'] as int? ?? 5,
+      effort: json['effort'] as String? ?? 'Норма',
+      notes: json['notes'] as String? ?? '',
+    );
+  }
+
   final String id;
   final String type;
   final DateTime date;
@@ -20,6 +33,19 @@ class TrainingSession {
   final int intensity;
   final String effort;
   final String notes;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'type': type,
+      'date': date.toIso8601String(),
+      'durationMinutes': durationMinutes,
+      'location': location,
+      'intensity': intensity,
+      'effort': effort,
+      'notes': notes,
+    };
+  }
 
   String get formattedDate {
     const months = [
