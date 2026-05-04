@@ -7,6 +7,7 @@ import 'components/buttons.dart';
 import 'components/metric_card.dart';
 import 'screens/diary_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/new_training_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/progress_screen.dart';
 import 'screens/timers_screen.dart';
@@ -79,6 +80,7 @@ final _router = GoRouter(
         GoRoute(path: '/timers', pageBuilder: (context, state) => const NoTransitionPage(child: TimersScreen())),
         GoRoute(path: '/progress', pageBuilder: (context, state) => const NoTransitionPage(child: ProgressScreen())),
         GoRoute(path: '/profile', pageBuilder: (context, state) => const NoTransitionPage(child: ProfileScreen())),
+        GoRoute(path: '/new-training', pageBuilder: (context, state) => const NoTransitionPage(child: NewTrainingScreen())),
       ],
     ),
   ],
