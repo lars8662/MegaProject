@@ -34,6 +34,27 @@ class TrainingSession {
   final String effort;
   final String notes;
 
+  TrainingSession copyWith({
+    String? type,
+    DateTime? date,
+    int? durationMinutes,
+    String? location,
+    int? intensity,
+    String? effort,
+    String? notes,
+  }) {
+    return TrainingSession(
+      id: id,
+      type: type ?? this.type,
+      date: date ?? this.date,
+      durationMinutes: durationMinutes ?? this.durationMinutes,
+      location: location ?? this.location,
+      intensity: intensity ?? this.intensity,
+      effort: effort ?? this.effort,
+      notes: notes ?? this.notes,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
