@@ -23,6 +23,13 @@ class TrainingSessionsNotifier extends Notifier<List<TrainingSession>> {
     await _saveSessions();
   }
 
+  Future<void> updateSession(TrainingSession updatedSession) async {
+    state = state
+        .map((session) => session.id == updatedSession.id ? updatedSession : session)
+        .toList(growable: false);
+    await _saveSessions();
+  }
+
   Future<void> deleteSession(String id) async {
     state = state.where((session) => session.id != id).toList(growable: false);
     await _saveSessions();
