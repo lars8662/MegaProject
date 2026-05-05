@@ -82,7 +82,11 @@ class _EditTrainingScreenState extends ConsumerState<EditTrainingScreen> {
         ),
       );
 
-    context.go('/workout/${updatedSession.id}');
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/workout/${updatedSession.id}');
+    }
   }
 
   @override
