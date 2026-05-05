@@ -1,20 +1,20 @@
+// ignore_for_file: prefer_const_constructors, prefer_const_declarations
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../components/buttons.dart';
+import '../models/training_session.dart';
+import '../state/training_sessions_provider.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
-  static const _metrics = [
-    _MetricItem('Последняя', 'Боулдеринг, 2ч назад', Icons.history_rounded),
-    _MetricItem('Сила пальцев', '+5% за месяц', Icons.back_hand_rounded),
-    _MetricItem('Объём недели', '12.5к кг', Icons.stacked_line_chart_rounded),
-    _MetricItem('Цель месяца', '85%', Icons.flag_rounded),
-  ];
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sessions = ref.watch(trainingSessionsProvider);
+    final summary = _HomeSummary.fromSessions(sessions);
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -22,7 +22,7 @@ class HomeScreen extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 18),
       children: [
         Text(
-          '3 мая, воскресенье',
+          _todayLabel(),
           style: textTheme.bodySmall?.copyWith(
             color: colorScheme.onSurface.withValues(alpha: 0.68),
             letterSpacing: 0.18,
@@ -39,20 +39,50 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 10),
-        _ReadinessCard(accent: colorScheme.primary),
-        const SizedBox(height: 10),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: _metrics.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-            childAspectRatio: 1.6,
+        if (sessions.isEmpty)
+          _EmptyHomeCard(onTap: () => context.push('/new-training'))
+        else ...[
+          _ReadinessCard(summary: summary, accent: colorScheme.primary),
+          const SizedBox(height: 10),
+          _LastWorkoutCard(session: summary.lastSession!, accent: colorScheme.primary),
+          const SizedBox(height: 10),
+          GridView(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
+              childAspectRatio: 1.6,
+            ),
+            children: [
+              _DashboardMetricCard(
+                label: 'Тренировок',
+                value: '${summary.totalSessions}',
+                subtitle: 'всего',
+                icon: Icons.fitness_center_rounded,
+              ),
+              _DashboardMetricCard(
+                label: 'Эта неделя',
+                value: summary.weekTimeLabel,
+                subtitle: '${summary.thisWeekSessions} ${_sessionWord(summary.thisWeekSessions)}',
+                icon: Icons.calendar_view_week_rounded,
+              ),
+              _DashboardMetricCard(
+                label: 'Нагрузка',
+                value: '${summary.weekAverageIntensityLabel}/10',
+                subtitle: 'средняя за неделю',
+                icon: Icons.local_fire_department_rounded,
+              ),
+              _DashboardMetricCard(
+                label: 'Главный тип',
+                value: summary.topType,
+                subtitle: 'по записям',
+                icon: Icons.category_rounded,
+              ),
+            ],
           ),
-          itemBuilder: (context, index) => _DashboardMetricCard(item: _metrics[index]),
-        ),
+        ],
         const SizedBox(height: 12),
         PrimaryButton(label: '+ Новая тренировка', onPressed: () => context.push('/new-training')),
       ],
@@ -60,9 +90,150 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-class _ReadinessCard extends StatelessWidget {
-  const _ReadinessCard({required this.accent});
+class _HomeSummary {
+  const _HomeSummary({
+    required this.totalSessions,
+    required this.totalMinutes,
+    required this.thisWeekSessions,
+    required this.thisWeekMinutes,
+    required this.thisWeekAverageIntensity,
+    required this.topType,
+    required this.lastSession,
+  });
 
+  factory _HomeSummary.fromSessions(List<TrainingSession> sessions) {
+    final sortedSessions = [...sessions]..sort((a, b) => b.date.compareTo(a.date));
+    final now = DateTime.now();
+    final weekStart = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1));
+    final typeCounts = <String, int>{};
+    var totalMinutes = 0;
+    var thisWeekSessions = 0;
+    var thisWeekMinutes = 0;
+    var thisWeekIntensity = 0;
+
+    for (final session in sessions) {
+      totalMinutes += session.durationMinutes;
+      typeCounts[session.type] = (typeCounts[session.type] ?? 0) + 1;
+
+      final sessionDate = DateTime(session.date.year, session.date.month, session.date.day);
+      if (!sessionDate.isBefore(weekStart)) {
+        thisWeekSessions += 1;
+        thisWeekMinutes += session.durationMinutes;
+        thisWeekIntensity += session.intensity;
+      }
+    }
+
+    final topType = _topType(typeCounts);
+
+    return _HomeSummary(
+      totalSessions: sessions.length,
+      totalMinutes: totalMinutes,
+      thisWeekSessions: thisWeekSessions,
+      thisWeekMinutes: thisWeekMinutes,
+      thisWeekAverageIntensity: thisWeekSessions == 0 ? 0 : thisWeekIntensity / thisWeekSessions,
+      topType: topType,
+      lastSession: sortedSessions.isEmpty ? null : sortedSessions.first,
+    );
+  }
+
+  final int totalSessions;
+  final int totalMinutes;
+  final int thisWeekSessions;
+  final int thisWeekMinutes;
+  final double thisWeekAverageIntensity;
+  final String topType;
+  final TrainingSession? lastSession;
+
+  String get totalTimeLabel => _durationLabel(totalMinutes);
+  String get weekTimeLabel => _durationLabel(thisWeekMinutes);
+  String get weekAverageIntensityLabel => thisWeekAverageIntensity == 0 ? '—' : thisWeekAverageIntensity.toStringAsFixed(1);
+
+  int get readinessScore {
+    if (thisWeekSessions == 0) {
+      return 72;
+    }
+
+    final loadPenalty = (thisWeekAverageIntensity * 4).round();
+    final volumePenalty = thisWeekSessions > 4 ? 8 : 0;
+    final score = 92 - loadPenalty - volumePenalty;
+    return score.clamp(45, 95);
+  }
+
+  String get readinessText {
+    if (readinessScore >= 80) {
+      return 'Хорошая готовность к нагрузкам';
+    }
+
+    if (readinessScore >= 65) {
+      return 'Нагрузка умеренная, следи за восстановлением';
+    }
+
+    return 'Неделя плотная, лучше добавить восстановление';
+  }
+}
+
+class _EmptyHomeCard extends StatelessWidget {
+  const _EmptyHomeCard({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFF252A2F),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0x164C5560)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: const Color(0x1FD4AF37),
+              borderRadius: BorderRadius.circular(17),
+            ),
+            child: const Icon(Icons.add_task_rounded, color: Color(0xFFD4AF37), size: 28),
+          ),
+          const SizedBox(height: 14),
+          const Text(
+            'Начните дневник',
+            style: TextStyle(color: Color(0xFFF6F1E8), fontSize: 22, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Добавьте первую тренировку — здесь появится последняя сессия, объём недели и краткая сводка.',
+            style: TextStyle(color: Color(0xB3F6F1E8), fontSize: 14, height: 1.35, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 46,
+            child: ElevatedButton.icon(
+              onPressed: onTap,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFD4AF37),
+                foregroundColor: const Color(0xFF1A1D20),
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              icon: const Icon(Icons.add_rounded, size: 20),
+              label: const Text('Добавить тренировку', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReadinessCard extends StatelessWidget {
+  const _ReadinessCard({required this.summary, required this.accent});
+
+  final _HomeSummary summary;
   final Color accent;
 
   @override
@@ -90,16 +261,21 @@ class _ReadinessCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Твоё тело готово к нагрузкам',
+                  summary.readinessText,
                   style: textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
                     height: 1.2,
                   ),
                 ),
+                const SizedBox(height: 6),
+                Text(
+                  'Неделя: ${summary.weekTimeLabel} · ${summary.thisWeekSessions} ${_sessionWord(summary.thisWeekSessions)}',
+                  style: const TextStyle(color: Color(0x99F6F1E8), fontSize: 12, fontWeight: FontWeight.w800),
+                ),
               ],
             ),
           ),
-          _ReadinessRing(accent: accent),
+          _ReadinessRing(accent: accent, value: summary.readinessScore),
         ],
       ),
     );
@@ -107,9 +283,10 @@ class _ReadinessCard extends StatelessWidget {
 }
 
 class _ReadinessRing extends StatelessWidget {
-  const _ReadinessRing({required this.accent});
+  const _ReadinessRing({required this.accent, required this.value});
 
   final Color accent;
+  final int value;
 
   @override
   Widget build(BuildContext context) {
@@ -121,14 +298,14 @@ class _ReadinessRing extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           CircularProgressIndicator(
-            value: 0.8,
+            value: value / 100,
             strokeWidth: 5,
             backgroundColor: accent.withValues(alpha: 0.16),
             valueColor: AlwaysStoppedAnimation<Color>(accent),
           ),
           Center(
             child: Text(
-              '80',
+              '$value',
               style: textTheme.titleMedium?.copyWith(color: accent, fontWeight: FontWeight.w700),
             ),
           ),
@@ -138,10 +315,63 @@ class _ReadinessRing extends StatelessWidget {
   }
 }
 
-class _DashboardMetricCard extends StatelessWidget {
-  const _DashboardMetricCard({required this.item});
+class _LastWorkoutCard extends StatelessWidget {
+  const _LastWorkoutCard({required this.session, required this.accent});
 
-  final _MetricItem item;
+  final TrainingSession session;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () => context.push('/workout/${session.id}'),
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF252A2F),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0x5CD4AF37)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: const Color(0x1FD4AF37),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(session.icon, color: accent, size: 26),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Последняя тренировка', style: TextStyle(color: Color(0x99F6F1E8), fontSize: 12, fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 4),
+                  Text(session.type, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFFF6F1E8), fontSize: 17, fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 3),
+                  Text('${session.formattedDate} · ${session.durationLabel}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xB3F6F1E8), fontSize: 12, fontWeight: FontWeight.w700)),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: Color(0x80F6F1E8)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DashboardMetricCard extends StatelessWidget {
+  const _DashboardMetricCard({required this.label, required this.value, required this.icon, this.subtitle});
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final String? subtitle;
 
   @override
   Widget build(BuildContext context) {
@@ -160,11 +390,11 @@ class _DashboardMetricCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(item.icon, size: 16, color: accent.withValues(alpha: 0.88)),
+              Icon(icon, size: 16, color: accent.withValues(alpha: 0.88)),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  item.label,
+                  label,
                   style: textTheme.labelMedium?.copyWith(color: const Color(0xFFEDE6D8).withValues(alpha: 0.74)),
                 ),
               ),
@@ -172,106 +402,73 @@ class _DashboardMetricCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            item.value,
-            style: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600, height: 1.15),
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800, height: 1.15, fontSize: 18),
           ),
-          const SizedBox(height: 7),
-          if (item.label == 'Сила пальцев') _MiniTrendLine(accent: accent),
-          if (item.label == 'Цель месяца') _GoalProgress(accent: accent),
+          if (subtitle != null) ...[
+            const SizedBox(height: 5),
+            Text(
+              subtitle!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Color(0x99F6F1E8), fontSize: 11, fontWeight: FontWeight.w800),
+            ),
+          ],
         ],
       ),
     );
   }
 }
 
-class _MiniTrendLine extends StatelessWidget {
-  const _MiniTrendLine({required this.accent});
-
-  final Color accent;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 18,
-      width: double.infinity,
-      child: CustomPaint(painter: _TrendPainter(accent: accent)),
-    );
-  }
-}
-
-class _GoalProgress extends StatelessWidget {
-  const _GoalProgress({required this.accent});
-
-  final Color accent;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(10),
-      child: LinearProgressIndicator(
-        value: 0.85,
-        minHeight: 6,
-        backgroundColor: Colors.white.withValues(alpha: 0.1),
-        valueColor: AlwaysStoppedAnimation<Color>(accent),
-      ),
-    );
-  }
-}
-
-class _TrendPainter extends CustomPainter {
-  const _TrendPainter({required this.accent});
-
-  final Color accent;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final points = [
-      Offset(0, size.height * 0.78),
-      Offset(size.width * 0.22, size.height * 0.62),
-      Offset(size.width * 0.45, size.height * 0.68),
-      Offset(size.width * 0.67, size.height * 0.4),
-      Offset(size.width * 0.92, size.height * 0.2),
-    ];
-
-    final path = Path()..moveTo(points.first.dx, points.first.dy);
-    for (var i = 1; i < points.length; i++) {
-      final p0 = points[i - 1];
-      final p1 = points[i];
-      final c1 = Offset((p0.dx + p1.dx) / 2, p0.dy);
-      final c2 = Offset((p0.dx + p1.dx) / 2, p1.dy);
-      path.cubicTo(c1.dx, c1.dy, c2.dx, c2.dy, p1.dx, p1.dy);
-    }
-
-    final linePaint = Paint()
-      ..color = accent
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.6
-      ..strokeCap = StrokeCap.round;
-
-    final glowPaint = Paint()
-      ..shader = LinearGradient(
-        colors: [accent.withValues(alpha: 0.2), Colors.transparent],
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawPath(path, glowPaint);
-    canvas.drawPath(path, linePaint);
-
-    canvas.drawCircle(points.last, 2.8, Paint()..color = accent);
+String _topType(Map<String, int> typeCounts) {
+  if (typeCounts.isEmpty) {
+    return '—';
   }
 
-  @override
-  bool shouldRepaint(covariant _TrendPainter oldDelegate) => oldDelegate.accent != accent;
+  final entries = typeCounts.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+  return entries.first.key;
 }
 
-class _MetricItem {
-  const _MetricItem(this.label, this.value, this.icon);
+String _durationLabel(int minutesTotal) {
+  final hours = minutesTotal ~/ 60;
+  final minutes = minutesTotal % 60;
 
-  final String label;
-  final String value;
-  final IconData icon;
+  if (hours == 0) {
+    return '$minutes мин';
+  }
+
+  if (minutes == 0) {
+    return '$hours ч';
+  }
+
+  return '$hours ч $minutes мин';
+}
+
+String _todayLabel() {
+  final now = DateTime.now();
+  const weekdays = ['понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота', 'воскресенье'];
+  const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+
+  return '${now.day} ${months[now.month - 1]}, ${weekdays[now.weekday - 1]}';
+}
+
+String _sessionWord(int count) {
+  final mod100 = count % 100;
+  final mod10 = count % 10;
+
+  if (mod100 >= 11 && mod100 <= 14) {
+    return 'тренировок';
+  }
+
+  if (mod10 == 1) {
+    return 'тренировка';
+  }
+
+  if (mod10 >= 2 && mod10 <= 4) {
+    return 'тренировки';
+  }
+
+  return 'тренировок';
 }
