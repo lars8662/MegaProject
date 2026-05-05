@@ -6,6 +6,7 @@ import 'components/app_card.dart';
 import 'components/buttons.dart';
 import 'components/metric_card.dart';
 import 'screens/diary_screen.dart';
+import 'screens/edit_training_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/new_training_screen.dart';
 import 'screens/profile_screen.dart';
@@ -78,6 +79,12 @@ final _router = GoRouter(
       path: '/workout/:id',
       pageBuilder: (context, state) => NoTransitionPage(
         child: WorkoutDetailScreen(sessionId: state.pathParameters['id'] ?? ''),
+      ),
+    ),
+    GoRoute(
+      path: '/workout/:id/edit',
+      pageBuilder: (context, state) => NoTransitionPage(
+        child: EditTrainingScreen(sessionId: state.pathParameters['id'] ?? ''),
       ),
     ),
     ShellRoute(
