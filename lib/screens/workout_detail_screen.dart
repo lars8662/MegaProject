@@ -56,6 +56,8 @@ class WorkoutDetailScreen extends ConsumerWidget {
             const SizedBox(height: 16),
             _HeroCard(session: session),
             const SizedBox(height: 12),
+            _EditButton(onTap: () => context.push('/workout/${session.id}/edit')),
+            const SizedBox(height: 12),
             _StatsGrid(session: session),
             const SizedBox(height: 12),
             _NotesCard(session: session),
@@ -212,6 +214,29 @@ class _HeroCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _EditButton extends StatelessWidget {
+  const _EditButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 48,
+      child: OutlinedButton.icon(
+        onPressed: onTap,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: const Color(0xFFECCB75),
+          side: const BorderSide(color: Color(0x66D4AF37)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+        icon: const Icon(Icons.edit_rounded, size: 18),
+        label: const Text('Редактировать', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900)),
       ),
     );
   }
