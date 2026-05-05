@@ -373,7 +373,7 @@ class _DetailsFormCard extends StatelessWidget {
             errorText: durationError,
             onChanged: onDurationChanged,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           _EditableField(
             controller: locationController,
             icon: Icons.location_on_outlined,
@@ -414,44 +414,44 @@ class _EditableField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      keyboardType: keyboardType,
-      inputFormatters: inputFormatters,
-      onChanged: onChanged,
-      textCapitalization: textCapitalization,
-      style: const TextStyle(color: Color(0xFFF6F1E8), fontSize: 15, fontWeight: FontWeight.w800),
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: const Color(0xFF171A1E),
-        prefixIcon: Icon(icon, color: const Color(0x99F6F1E8), size: 20),
-        labelText: label,
-        labelStyle: const TextStyle(color: Color(0x80F6F1E8), fontSize: 13, fontWeight: FontWeight.w700),
-        hintText: hintText,
-        hintStyle: const TextStyle(color: Color(0x66F6F1E8), fontWeight: FontWeight.w600),
-        suffixText: suffix,
-        suffixStyle: const TextStyle(color: Color(0x99F6F1E8), fontWeight: FontWeight.w800),
-        errorText: errorText,
-        errorStyle: const TextStyle(color: Color(0xFFFFB4AB), fontWeight: FontWeight.w700),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0x124C5560)),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 6),
+          child: Text(label, style: const TextStyle(color: Color(0x99F6F1E8), fontSize: 12, fontWeight: FontWeight.w800)),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0x99D4AF37)),
+        TextField(
+          controller: controller,
+          keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
+          onChanged: onChanged,
+          textCapitalization: textCapitalization,
+          style: const TextStyle(color: Color(0xFFF6F1E8), fontSize: 15, fontWeight: FontWeight.w800),
+          decoration: _inputDecoration(icon: icon, hintText: hintText, suffix: suffix, errorText: errorText),
         ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0x99FFB4AB)),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFFFFB4AB)),
-        ),
-      ),
+      ],
     );
   }
+}
+
+InputDecoration _inputDecoration({required IconData icon, String? hintText, String? suffix, String? errorText}) {
+  return InputDecoration(
+    filled: true,
+    fillColor: const Color(0xFF171A1E),
+    prefixIcon: Icon(icon, color: const Color(0x99F6F1E8), size: 20),
+    hintText: hintText,
+    hintStyle: const TextStyle(color: Color(0x66F6F1E8), fontWeight: FontWeight.w600),
+    suffixText: suffix,
+    suffixStyle: const TextStyle(color: Color(0x99F6F1E8), fontWeight: FontWeight.w800),
+    errorText: errorText,
+    errorStyle: const TextStyle(color: Color(0xFFFFB4AB), fontWeight: FontWeight.w700),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
+    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0x124C5560))),
+    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0x99D4AF37))),
+    errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0x99FFB4AB))),
+    focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFFFFB4AB))),
+  );
 }
 
 class _IntensityCard extends StatelessWidget {
@@ -584,6 +584,7 @@ class _NotesFormCard extends StatelessWidget {
           fillColor: const Color(0xFF171A1E),
           hintText: 'Как прошла тренировка? Ощущения, кожа, сон, проекты…',
           hintStyle: const TextStyle(color: Color(0x66F6F1E8), height: 1.35, fontWeight: FontWeight.w600),
+          contentPadding: const EdgeInsets.all(14),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
             borderSide: const BorderSide(color: Color(0x124C5560)),
