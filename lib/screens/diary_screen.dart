@@ -5,15 +5,23 @@ import 'package:go_router/go_router.dart';
 import '../models/training_session.dart';
 import '../state/training_sessions_provider.dart';
 
-class DiaryScreen extends ConsumerWidget {
+class DiaryScreen extends ConsumerStatefulWidget {
   const DiaryScreen({super.key});
 
-  static const _filters = ['Все', 'Боулдеринг', 'Трудность', 'ОФП', 'Фингерборд', 'Заметки'];
+  @override
+  ConsumerState<DiaryScreen> createState() => _DiaryScreenState();
+}
+
+class _DiaryScreenState extends ConsumerState<DiaryScreen> {
+  static const _filters = ['Все', 'Боулдеринг', 'Трудность', 'ОФП', 'Фингерборд', 'Силовая', 'Восстановление'];
+
+  String _selectedFilter = 'Все';
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final savedSessions = ref.watch(trainingSessionsProvider);
-    final savedEntries = savedSessions.map(_WorkoutEntry.fromSession).toList();
+    final filteredSessions = _filteredSessions(savedSessions);
+    final filteredEntries = filteredSessions.map(_WorkoutEntry.fromSession).toList();
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
@@ -41,7 +49,7 @@ class DiaryScreen extends ConsumerWidget {
         if (savedSessions.isNotEmpty) ...[
           const SizedBox(height: 8),
           Text(
-            _savedCountLabel(savedSessions.length),
+            _countLabel(totalCount: savedSessions.length, visibleCount: filteredSessions.length, filter: _selectedFilter),
             style: const TextStyle(color: Color(0xFFD4AF37), fontSize: 13, fontWeight: FontWeight.w800),
           ),
         ],
@@ -51,18 +59,47 @@ class DiaryScreen extends ConsumerWidget {
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.only(right: 20),
-            itemBuilder: (context, index) => _FilterChip(label: _filters[index], isSelected: index == 0),
+            itemBuilder: (context, index) {
+              final filter = _filters[index];
+              return _FilterChip(
+                label: filter,
+                isSelected: filter == _selectedFilter,
+                onTap: () => setState(() => _selectedFilter = filter),
+              );
+            },
             separatorBuilder: (context, index) => const SizedBox(width: 10),
             itemCount: _filters.length,
           ),
         ),
         const SizedBox(height: 14),
-        if (savedEntries.isEmpty)
+        if (savedSessions.isEmpty)
           _EmptyDiaryCard(onTap: () => context.push('/new-training'))
+        else if (filteredEntries.isEmpty)
+          _EmptyFilterCard(filter: _selectedFilter, onReset: () => setState(() => _selectedFilter = 'Все'))
         else
-          ...savedEntries.map(_WorkoutCard.new),
+          ...filteredEntries.map(_WorkoutCard.new),
       ],
     );
+  }
+
+  List<TrainingSession> _filteredSessions(List<TrainingSession> sessions) {
+    if (_selectedFilter == 'Все') {
+      return sessions;
+    }
+
+    return sessions.where((session) => session.type == _selectedFilter).toList(growable: false);
+  }
+
+  static String _countLabel({required int totalCount, required int visibleCount, required String filter}) {
+    if (filter == 'Все') {
+      return _savedCountLabel(totalCount);
+    }
+
+    if (visibleCount == 0) {
+      return 'Нет записей: $filter';
+    }
+
+    return '${_savedCountLabel(visibleCount)} · $filter';
   }
 
   static String _savedCountLabel(int count) {
@@ -86,7 +123,7 @@ class _DiarySubtitle extends ConsumerWidget {
     final savedSessions = ref.watch(trainingSessionsProvider);
 
     return Text(
-      savedSessions.isEmpty ? 'Создайте первую запись, чтобы начать отслеживать прогресс.' : 'Свежие записи открываются по нажатию.',
+      savedSessions.isEmpty ? 'Создайте первую запись, чтобы начать отслеживать прогресс.' : 'Фильтруйте записи по типу тренировки.',
       style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: const Color(0xB3F6F1E8)),
     );
   }
@@ -176,11 +213,70 @@ class _EmptyDiaryCard extends StatelessWidget {
   }
 }
 
+class _EmptyFilterCard extends StatelessWidget {
+  const _EmptyFilterCard({required this.filter, required this.onReset});
+
+  final String filter;
+  final VoidCallback onReset;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFF252A2F),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0x164C5560)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: const Color(0x1FD4AF37),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(Icons.filter_alt_off_rounded, color: Color(0xFFD4AF37), size: 25),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'Нет записей: $filter',
+            style: const TextStyle(color: Color(0xFFF6F1E8), fontSize: 21, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'В этой категории пока нет тренировок. Можно сбросить фильтр или добавить новую запись.',
+            style: TextStyle(color: Color(0xB3F6F1E8), fontSize: 14, height: 1.35, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 44,
+            child: OutlinedButton.icon(
+              onPressed: onReset,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFFECCB75),
+                side: const BorderSide(color: Color(0x66D4AF37)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              icon: const Icon(Icons.refresh_rounded, size: 19),
+              label: const Text('Показать все', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _FilterChip extends StatelessWidget {
-  const _FilterChip({required this.label, required this.isSelected});
+  const _FilterChip({required this.label, required this.isSelected, required this.onTap});
 
   final String label;
   final bool isSelected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -190,27 +286,31 @@ class _FilterChip extends StatelessWidget {
       end: Alignment.bottomRight,
     );
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeOut,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        gradient: isSelected ? selectedGradient : null,
-        color: isSelected ? null : const Color(0xFF2A2F34),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: isSelected ? const Color(0xFFF3D785) : const Color(0x334C5560)),
-        boxShadow: isSelected
-            ? const [
-                BoxShadow(color: Color(0x40D4AF37), blurRadius: 12, offset: Offset(0, 4)),
-              ]
-            : null,
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: isSelected ? const Color(0xFF1F2226) : const Color(0xFFF6F1E8),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          gradient: isSelected ? selectedGradient : null,
+          color: isSelected ? null : const Color(0xFF2A2F34),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: isSelected ? const Color(0xFFF3D785) : const Color(0x334C5560)),
+          boxShadow: isSelected
+              ? const [
+                  BoxShadow(color: Color(0x40D4AF37), blurRadius: 12, offset: Offset(0, 4)),
+                ]
+              : null,
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: isSelected ? const Color(0xFF1F2226) : const Color(0xFFF6F1E8),
+          ),
         ),
       ),
     );
