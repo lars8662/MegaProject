@@ -1,6 +1,7 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_declarations
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -34,6 +35,19 @@ class _EditTrainingScreenState extends ConsumerState<EditTrainingScreen> {
   late int _intensity;
   late String _selectedEffort;
 
+  final _durationController = TextEditingController();
+  final _locationController = TextEditingController();
+  final _notesController = TextEditingController();
+  String? _durationError;
+
+  @override
+  void dispose() {
+    _durationController.dispose();
+    _locationController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
   void _initialize(TrainingSession session) {
     if (_initialized) {
       return;
@@ -44,8 +58,12 @@ class _EditTrainingScreenState extends ConsumerState<EditTrainingScreen> {
     if (_selectedTypeIndex < 0) {
       _selectedTypeIndex = 0;
     }
+
     _intensity = session.intensity;
     _selectedEffort = _efforts.contains(session.effort) ? session.effort : 'Норма';
+    _durationController.text = session.durationMinutes.toString();
+    _locationController.text = session.location;
+    _notesController.text = session.notes;
     _initialized = true;
   }
 
@@ -58,12 +76,26 @@ class _EditTrainingScreenState extends ConsumerState<EditTrainingScreen> {
   }
 
   Future<void> _saveChanges() async {
+    final durationMinutes = int.tryParse(_durationController.text.trim());
+
+    if (durationMinutes == null || durationMinutes <= 0) {
+      setState(() => _durationError = 'Введите длительность в минутах');
+      return;
+    }
+
+    setState(() => _durationError = null);
+
     final selectedType = _types[_selectedTypeIndex].label;
+    final location = _locationController.text.trim().isEmpty ? 'Скалодром' : _locationController.text.trim();
+    final notes = _notesController.text.trim();
+
     final updatedSession = _originalSession.copyWith(
       type: selectedType,
+      durationMinutes: durationMinutes,
+      location: location,
       intensity: _intensity,
       effort: _selectedEffort,
-      notes: 'Обновлено: $selectedType, интенсивность $_intensity/10.',
+      notes: notes,
     );
 
     await ref.read(trainingSessionsProvider.notifier).updateSession(updatedSession);
@@ -145,7 +177,7 @@ class _EditTrainingScreenState extends ConsumerState<EditTrainingScreen> {
                       ),
                       SizedBox(height: 6),
                       Text(
-                        'Измените ключевые параметры.',
+                        'Обновите детали тренировки.',
                         style: TextStyle(color: Color(0xB3F6F1E8), fontSize: 14, fontWeight: FontWeight.w700),
                       ),
                     ],
@@ -174,7 +206,16 @@ class _EditTrainingScreenState extends ConsumerState<EditTrainingScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            _InfoCard(session: session),
+            _DetailsFormCard(
+              durationController: _durationController,
+              locationController: _locationController,
+              durationError: _durationError,
+              onDurationChanged: (_) {
+                if (_durationError != null) {
+                  setState(() => _durationError = null);
+                }
+              },
+            ),
             const SizedBox(height: 12),
             _IntensityCard(
               intensity: _intensity,
@@ -183,6 +224,8 @@ class _EditTrainingScreenState extends ConsumerState<EditTrainingScreen> {
               onIntensityChanged: (value) => setState(() => _intensity = value.round()),
               onEffortChanged: (effort) => setState(() => _selectedEffort = effort),
             ),
+            const SizedBox(height: 12),
+            _NotesFormCard(controller: _notesController),
             const SizedBox(height: 16),
             _SaveButton(onTap: _saveChanges),
           ],
@@ -301,62 +344,114 @@ class _TypeTile extends StatelessWidget {
   }
 }
 
-class _InfoCard extends StatelessWidget {
-  const _InfoCard({required this.session});
+class _DetailsFormCard extends StatelessWidget {
+  const _DetailsFormCard({
+    required this.durationController,
+    required this.locationController,
+    required this.onDurationChanged,
+    this.durationError,
+  });
 
-  final TrainingSession session;
+  final TextEditingController durationController;
+  final TextEditingController locationController;
+  final ValueChanged<String> onDurationChanged;
+  final String? durationError;
 
   @override
   Widget build(BuildContext context) {
     return _SectionCard(
-      title: 'Пока только ключевые поля',
+      title: 'Основное',
       child: Column(
         children: [
-          _InfoRow(icon: Icons.calendar_today_rounded, label: 'Дата', value: session.formattedDate),
-          const SizedBox(height: 8),
-          _InfoRow(icon: Icons.timer_outlined, label: 'Длительность', value: session.durationLabel),
-          const SizedBox(height: 8),
-          _InfoRow(icon: Icons.location_on_outlined, label: 'Место', value: session.location),
+          _EditableField(
+            controller: durationController,
+            icon: Icons.timer_outlined,
+            label: 'Длительность',
+            suffix: 'мин',
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            errorText: durationError,
+            onChanged: onDurationChanged,
+          ),
+          const SizedBox(height: 10),
+          _EditableField(
+            controller: locationController,
+            icon: Icons.location_on_outlined,
+            label: 'Место',
+            hintText: 'Например: Скалодром',
+            textCapitalization: TextCapitalization.sentences,
+          ),
         ],
       ),
     );
   }
 }
 
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.icon, required this.label, required this.value});
+class _EditableField extends StatelessWidget {
+  const _EditableField({
+    required this.controller,
+    required this.icon,
+    required this.label,
+    this.hintText,
+    this.suffix,
+    this.keyboardType,
+    this.inputFormatters,
+    this.errorText,
+    this.onChanged,
+    this.textCapitalization = TextCapitalization.none,
+  });
 
+  final TextEditingController controller;
   final IconData icon;
   final String label;
-  final String value;
+  final String? hintText;
+  final String? suffix;
+  final TextInputType? keyboardType;
+  final List<TextInputFormatter>? inputFormatters;
+  final String? errorText;
+  final ValueChanged<String>? onChanged;
+  final TextCapitalization textCapitalization;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-      decoration: BoxDecoration(
-        color: const Color(0xFF171A1E),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0x124C5560)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: const Color(0x99F6F1E8)),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: const TextStyle(color: Color(0x80F6F1E8), fontSize: 11, fontWeight: FontWeight.w700)),
-                const SizedBox(height: 3),
-                Text(value, style: const TextStyle(color: Color(0xFFF6F1E8), fontSize: 15, fontWeight: FontWeight.w800)),
-              ],
-            ),
-          ),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 6),
+          child: Text(label, style: const TextStyle(color: Color(0x99F6F1E8), fontSize: 12, fontWeight: FontWeight.w800)),
+        ),
+        TextField(
+          controller: controller,
+          keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
+          onChanged: onChanged,
+          textCapitalization: textCapitalization,
+          style: const TextStyle(color: Color(0xFFF6F1E8), fontSize: 15, fontWeight: FontWeight.w800),
+          decoration: _inputDecoration(icon: icon, hintText: hintText, suffix: suffix, errorText: errorText),
+        ),
+      ],
     );
   }
+}
+
+InputDecoration _inputDecoration({required IconData icon, String? hintText, String? suffix, String? errorText}) {
+  return InputDecoration(
+    filled: true,
+    fillColor: const Color(0xFF171A1E),
+    prefixIcon: Icon(icon, color: const Color(0x99F6F1E8), size: 20),
+    hintText: hintText,
+    hintStyle: const TextStyle(color: Color(0x66F6F1E8), fontWeight: FontWeight.w600),
+    suffixText: suffix,
+    suffixStyle: const TextStyle(color: Color(0x99F6F1E8), fontWeight: FontWeight.w800),
+    errorText: errorText,
+    errorStyle: const TextStyle(color: Color(0xFFFFB4AB), fontWeight: FontWeight.w700),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
+    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0x124C5560))),
+    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0x99D4AF37))),
+    errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0x99FFB4AB))),
+    focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFFFFB4AB))),
+  );
 }
 
 class _IntensityCard extends StatelessWidget {
@@ -462,6 +557,41 @@ class _EffortChip extends StatelessWidget {
             color: selected ? const Color(0xFFD4AF37) : const Color(0xB3F6F1E8),
             fontSize: 13,
             fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NotesFormCard extends StatelessWidget {
+  const _NotesFormCard({required this.controller});
+
+  final TextEditingController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return _SectionCard(
+      title: 'Заметки',
+      child: TextField(
+        controller: controller,
+        minLines: 4,
+        maxLines: 7,
+        textCapitalization: TextCapitalization.sentences,
+        style: const TextStyle(color: Color(0xFFF6F1E8), height: 1.35, fontSize: 15, fontWeight: FontWeight.w700),
+        decoration: InputDecoration(
+          filled: true,
+          fillColor: const Color(0xFF171A1E),
+          hintText: 'Как прошла тренировка? Ощущения, кожа, сон, проекты…',
+          hintStyle: const TextStyle(color: Color(0x66F6F1E8), height: 1.35, fontWeight: FontWeight.w600),
+          contentPadding: const EdgeInsets.all(14),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: Color(0x124C5560)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: Color(0x99D4AF37)),
           ),
         ),
       ),
