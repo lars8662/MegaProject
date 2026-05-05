@@ -27,6 +27,10 @@ class ProgressScreen extends ConsumerWidget {
           sessions.isEmpty ? 'Добавьте тренировки, чтобы увидеть аналитику.' : 'Статистика по сохранённым тренировкам.',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: const Color(0xB3F6F1E8)),
         ),
+        if (sessions.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          const _PeriodPill(),
+        ],
         const SizedBox(height: 16),
         if (sessions.isEmpty)
           _EmptyProgressCard(onTap: () => context.push('/new-training'))
@@ -52,6 +56,7 @@ class _ProgressSummary {
     required this.typeCounts,
     required this.lastSession,
     required this.thisWeekSessions,
+    required this.thisWeekMinutes,
   });
 
   factory _ProgressSummary.fromSessions(List<TrainingSession> sessions) {
@@ -63,6 +68,7 @@ class _ProgressSummary {
     final now = DateTime.now();
     final weekStart = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1));
     var thisWeekSessions = 0;
+    var thisWeekMinutes = 0;
 
     for (final session in sessions) {
       totalMinutes += session.durationMinutes;
@@ -72,6 +78,7 @@ class _ProgressSummary {
       final sessionDate = DateTime(session.date.year, session.date.month, session.date.day);
       if (!sessionDate.isBefore(weekStart)) {
         thisWeekSessions += 1;
+        thisWeekMinutes += session.durationMinutes;
       }
     }
 
@@ -82,6 +89,7 @@ class _ProgressSummary {
       typeCounts: typeCounts,
       lastSession: sortedSessions.isEmpty ? null : sortedSessions.first,
       thisWeekSessions: thisWeekSessions,
+      thisWeekMinutes: thisWeekMinutes,
     );
   }
 
@@ -91,25 +99,25 @@ class _ProgressSummary {
   final Map<String, int> typeCounts;
   final TrainingSession? lastSession;
   final int thisWeekSessions;
+  final int thisWeekMinutes;
 
-  double get totalHours => totalMinutes / 60;
+  String get totalTimeLabel => _durationLabel(totalMinutes);
 
-  String get totalTimeLabel {
-    final hours = totalMinutes ~/ 60;
-    final minutes = totalMinutes % 60;
+  String get weekTimeLabel => _durationLabel(thisWeekMinutes);
 
-    if (hours == 0) {
-      return '$minutes мин';
+  String get averageDurationLabel {
+    if (totalSessions == 0) {
+      return '—';
     }
 
-    if (minutes == 0) {
-      return '$hours ч';
-    }
-
-    return '$hours ч $minutes мин';
+    return _durationLabel(totalMinutes ~/ totalSessions);
   }
 
   String get averageIntensityLabel => averageIntensity.toStringAsFixed(1);
+
+  String get totalSessionsLabel => '$totalSessions ${_sessionWord(totalSessions)}';
+
+  String get weekSummaryLabel => '$thisWeekSessions ${_sessionWord(thisWeekSessions)} · $weekTimeLabel';
 
   String get topType {
     if (typeCounts.isEmpty) {
@@ -118,6 +126,29 @@ class _ProgressSummary {
 
     final entries = typeCounts.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
     return entries.first.key;
+  }
+}
+
+class _PeriodPill extends StatelessWidget {
+  const _PeriodPill();
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0x1FD4AF37),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0x44D4AF37)),
+        ),
+        child: const Text(
+          'Период: всё время',
+          style: TextStyle(color: Color(0xFFECCB75), fontSize: 12, fontWeight: FontWeight.w900),
+        ),
+      ),
+    );
   }
 }
 
@@ -208,7 +239,12 @@ class _HeroProgressCard extends StatelessWidget {
             summary.totalTimeLabel,
             style: const TextStyle(color: Color(0xFFF6F1E8), fontSize: 34, fontWeight: FontWeight.w900, height: 1),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
+          Text(
+            '${summary.totalSessionsLabel} · средняя ${summary.averageDurationLabel}',
+            style: const TextStyle(color: Color(0xFFD4AF37), fontSize: 14, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 8),
           Text(
             lastSession == null ? 'Нет последней тренировки' : 'Последняя: ${lastSession.type} · ${lastSession.formattedDate}',
             style: const TextStyle(color: Color(0xDFF6F1E8), fontSize: 14, fontWeight: FontWeight.w700),
@@ -235,7 +271,7 @@ class _MetricGrid extends StatelessWidget {
       childAspectRatio: 1.55,
       children: [
         _MetricCard(label: 'Тренировок', value: '${summary.totalSessions}', icon: Icons.fitness_center_rounded),
-        _MetricCard(label: 'За неделю', value: '${summary.thisWeekSessions}', icon: Icons.calendar_view_week_rounded),
+        _MetricCard(label: 'Эта неделя', value: summary.weekTimeLabel, subtitle: '${summary.thisWeekSessions} ${_sessionWord(summary.thisWeekSessions)}', icon: Icons.calendar_view_week_rounded),
         _MetricCard(label: 'Средняя нагрузка', value: '${summary.averageIntensityLabel}/10', icon: Icons.local_fire_department_rounded),
         _MetricCard(label: 'Главный тип', value: summary.topType, icon: Icons.category_rounded),
       ],
@@ -244,11 +280,12 @@ class _MetricGrid extends StatelessWidget {
 }
 
 class _MetricCard extends StatelessWidget {
-  const _MetricCard({required this.label, required this.value, required this.icon});
+  const _MetricCard({required this.label, required this.value, required this.icon, this.subtitle});
 
   final String label;
   final String value;
   final IconData icon;
+  final String? subtitle;
 
   @override
   Widget build(BuildContext context) {
@@ -271,7 +308,11 @@ class _MetricCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFFF6F1E8), fontSize: 22, fontWeight: FontWeight.w900)),
+          Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFFF6F1E8), fontSize: 20, fontWeight: FontWeight.w900)),
+          if (subtitle != null) ...[
+            const SizedBox(height: 4),
+            Text(subtitle!, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0x99F6F1E8), fontSize: 12, fontWeight: FontWeight.w800)),
+          ],
         ],
       ),
     );
@@ -319,6 +360,7 @@ class _TypeRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ratio = total == 0 ? 0.0 : count / total;
+    final percent = (ratio * 100).round();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -326,7 +368,7 @@ class _TypeRow extends StatelessWidget {
         Row(
           children: [
             Expanded(child: Text(type, style: const TextStyle(color: Color(0xDFF6F1E8), fontSize: 14, fontWeight: FontWeight.w800))),
-            Text('$count', style: const TextStyle(color: Color(0xFFD4AF37), fontSize: 14, fontWeight: FontWeight.w900)),
+            Text('$count · $percent%', style: const TextStyle(color: Color(0xFFD4AF37), fontSize: 14, fontWeight: FontWeight.w900)),
           ],
         ),
         const SizedBox(height: 7),
@@ -372,7 +414,7 @@ class _RecentTrendCard extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'На этой неделе: ${summary.thisWeekSessions} ${_sessionWord(summary.thisWeekSessions)}. Средняя интенсивность: ${summary.averageIntensityLabel}/10.',
+              'На этой неделе: ${summary.weekSummaryLabel}. Средняя интенсивность: ${summary.averageIntensityLabel}/10.',
               style: const TextStyle(color: Color(0xDFF6F1E8), fontSize: 14, height: 1.35, fontWeight: FontWeight.w700),
             ),
           ),
@@ -382,12 +424,34 @@ class _RecentTrendCard extends StatelessWidget {
   }
 }
 
+String _durationLabel(int minutesTotal) {
+  final hours = minutesTotal ~/ 60;
+  final minutes = minutesTotal % 60;
+
+  if (hours == 0) {
+    return '$minutes мин';
+  }
+
+  if (minutes == 0) {
+    return '$hours ч';
+  }
+
+  return '$hours ч $minutes мин';
+}
+
 String _sessionWord(int count) {
-  if (count == 1) {
+  final mod100 = count % 100;
+  final mod10 = count % 10;
+
+  if (mod100 >= 11 && mod100 <= 14) {
+    return 'тренировок';
+  }
+
+  if (mod10 == 1) {
     return 'тренировка';
   }
 
-  if (count >= 2 && count <= 4) {
+  if (mod10 >= 2 && mod10 <= 4) {
     return 'тренировки';
   }
 
