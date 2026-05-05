@@ -18,9 +18,7 @@ class WorkoutDetailScreen extends ConsumerWidget {
     if (session == null) {
       return const Scaffold(
         backgroundColor: Color(0xFF1A1D20),
-        body: SafeArea(
-          child: _MissingWorkoutView(),
-        ),
+        body: SafeArea(child: _MissingWorkoutView()),
       );
     }
 
@@ -38,11 +36,11 @@ class WorkoutDetailScreen extends ConsumerWidget {
             Row(
               children: [
                 _BackButton(onTap: () => context.go('/diary')),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 const Expanded(
                   child: Text(
                     'Детали тренировки',
-                    style: TextStyle(color: Color(0xFFF6F1E8), fontSize: 28, fontWeight: FontWeight.w900, height: 1.05),
+                    style: TextStyle(color: Color(0xFFF6F1E8), fontSize: 26, fontWeight: FontWeight.w900, height: 1.05),
                   ),
                 ),
               ],
@@ -53,7 +51,9 @@ class WorkoutDetailScreen extends ConsumerWidget {
             _StatsGrid(session: session),
             const SizedBox(height: 12),
             _NotesCard(session: session),
-            const SizedBox(height: 16),
+            const SizedBox(height: 22),
+            const _RemoveSectionLabel(),
+            const SizedBox(height: 8),
             _DeleteButton(onTap: () => _confirmDelete(context, ref, session)),
           ],
         ),
@@ -63,11 +63,8 @@ class WorkoutDetailScreen extends ConsumerWidget {
 
   TrainingSession? _findSession(List<TrainingSession> sessions, String id) {
     for (final session in sessions) {
-      if (session.id == id) {
-        return session;
-      }
+      if (session.id == id) return session;
     }
-
     return null;
   }
 
@@ -91,15 +88,11 @@ class WorkoutDetailScreen extends ConsumerWidget {
       ),
     );
 
-    if (confirmed != true || !context.mounted) {
-      return;
-    }
+    if (confirmed != true || !context.mounted) return;
 
     await ref.read(trainingSessionsProvider.notifier).deleteSession(session.id);
 
-    if (!context.mounted) {
-      return;
-    }
+    if (!context.mounted) return;
 
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -225,13 +218,11 @@ class _StatsGrid extends StatelessWidget {
         _StatCard(label: 'Длительность', value: session.durationLabel, icon: Icons.timer_outlined),
         _StatCard(label: 'Интенсивность', value: '${session.intensity}/10', icon: Icons.local_fire_department_rounded),
         _StatCard(label: 'Самочувствие', value: session.effort, icon: Icons.favorite_rounded),
-        _StatCard(label: 'Тип', value: session.type, icon: session.icon),
+        _StatCard(label: 'Место', value: session.location, icon: Icons.location_on_outlined),
       ],
     );
   }
-}
-
-class _StatCard extends StatelessWidget {
+}\nclass _StatCard extends StatelessWidget {
   const _StatCard({required this.label, required this.value, required this.icon});
 
   final String label;
@@ -289,6 +280,18 @@ class _NotesCard extends StatelessWidget {
           Text(session.detail, style: const TextStyle(color: Color(0xDFF6F1E8), fontSize: 15, fontWeight: FontWeight.w700, height: 1.35)),
         ],
       ),
+    );
+  }
+}
+
+class _RemoveSectionLabel extends StatelessWidget {
+  const _RemoveSectionLabel();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Text(
+      'Управление записью',
+      style: TextStyle(color: Color(0x99FFB4AB), fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.4),
     );
   }
 }
