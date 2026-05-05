@@ -63,8 +63,11 @@ class WorkoutDetailScreen extends ConsumerWidget {
 
   TrainingSession? _findSession(List<TrainingSession> sessions, String id) {
     for (final session in sessions) {
-      if (session.id == id) return session;
+      if (session.id == id) {
+        return session;
+      }
     }
+
     return null;
   }
 
@@ -88,11 +91,15 @@ class WorkoutDetailScreen extends ConsumerWidget {
       ),
     );
 
-    if (confirmed != true || !context.mounted) return;
+    if (confirmed != true || !context.mounted) {
+      return;
+    }
 
     await ref.read(trainingSessionsProvider.notifier).deleteSession(session.id);
 
-    if (!context.mounted) return;
+    if (!context.mounted) {
+      return;
+    }
 
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -222,7 +229,9 @@ class _StatsGrid extends StatelessWidget {
       ],
     );
   }
-}\nclass _StatCard extends StatelessWidget {
+}
+
+class _StatCard extends StatelessWidget {
   const _StatCard({required this.label, required this.value, required this.icon});
 
   final String label;
