@@ -30,6 +30,7 @@ class _NewTrainingScreenState extends ConsumerState<NewTrainingScreen> {
   int _selectedTypeIndex = 0;
   int _intensity = 7;
   String _selectedEffort = 'Норма';
+  DateTime _selectedDate = DateTime.now();
 
   final _durationController = TextEditingController(text: '120');
   final _locationController = TextEditingController(text: 'Скалодром');
@@ -52,6 +53,33 @@ class _NewTrainingScreenState extends ConsumerState<NewTrainingScreen> {
     }
   }
 
+  Future<void> _pickDate() async {
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: Color(0xFFD4AF37),
+              onPrimary: Color(0xFF1A1D20),
+              surface: Color(0xFF252A2F),
+              onSurface: Color(0xFFF6F1E8),
+            ),
+            dialogBackgroundColor: const Color(0xFF1A1D20),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (pickedDate != null) {
+      setState(() => _selectedDate = pickedDate);
+    }
+  }
+
   void _saveTraining() {
     final selectedType = _types[_selectedTypeIndex].label;
     final durationMinutes = int.tryParse(_durationController.text.trim());
@@ -69,7 +97,7 @@ class _NewTrainingScreenState extends ConsumerState<NewTrainingScreen> {
     final session = TrainingSession(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
       type: selectedType,
-      date: DateTime.now(),
+      date: _selectedDate,
       durationMinutes: durationMinutes,
       location: location,
       intensity: _intensity,
@@ -148,6 +176,8 @@ class _NewTrainingScreenState extends ConsumerState<NewTrainingScreen> {
             ),
             const SizedBox(height: 12),
             _DetailsFormCard(
+              selectedDate: _selectedDate,
+              onDateTap: _pickDate,
               durationController: _durationController,
               locationController: _locationController,
               durationError: _durationError,
@@ -257,8 +287,10 @@ class _TypeTile extends StatelessWidget {
 }
 
 class _DetailsFormCard extends StatelessWidget {
-  const _DetailsFormCard({required this.durationController, required this.locationController, required this.onDurationChanged, this.durationError});
+  const _DetailsFormCard({required this.selectedDate, required this.onDateTap, required this.durationController, required this.locationController, required this.onDurationChanged, this.durationError});
 
+  final DateTime selectedDate;
+  final VoidCallback onDateTap;
   final TextEditingController durationController;
   final TextEditingController locationController;
   final ValueChanged<String> onDurationChanged;
@@ -270,6 +302,8 @@ class _DetailsFormCard extends StatelessWidget {
       title: 'Основное',
       child: Column(
         children: [
+          _DateField(date: selectedDate, onTap: onDateTap),
+          const SizedBox(height: 10),
           _EditableField(
             controller: durationController,
             icon: Icons.timer_outlined,
@@ -290,6 +324,47 @@ class _DetailsFormCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _DateField extends StatelessWidget {
+  const _DateField({required this.date, required this.onTap});
+
+  final DateTime date;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(left: 4, bottom: 6),
+          child: Text('Дата', style: TextStyle(color: Color(0x99F6F1E8), fontSize: 12, fontWeight: FontWeight.w800)),
+        ),
+        InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            height: 54,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(
+              color: const Color(0xFF171A1E),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0x124C5560)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.calendar_today_rounded, color: Color(0x99F6F1E8), size: 20),
+                const SizedBox(width: 12),
+                Expanded(child: Text(_formatDate(date), style: const TextStyle(color: Color(0xFFF6F1E8), fontSize: 15, fontWeight: FontWeight.w800))),
+                const Icon(Icons.chevron_right_rounded, color: Color(0x80F6F1E8)),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -348,6 +423,11 @@ InputDecoration _inputDecoration({required IconData icon, String? hintText, Stri
     errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0x99FFB4AB))),
     focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFFFFB4AB))),
   );
+}
+
+String _formatDate(DateTime date) {
+  const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+  return '${date.day} ${months[date.month - 1]} ${date.year}';
 }
 
 class _IntensityCard extends StatelessWidget {
