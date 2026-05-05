@@ -30,6 +30,14 @@ class _NewTrainingScreenState extends ConsumerState<NewTrainingScreen> {
   int _intensity = 7;
   String _selectedEffort = 'Норма';
 
+  void _goBack() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/diary');
+    }
+  }
+
   void _saveTraining() {
     final selectedType = _types[_selectedTypeIndex].label;
 
@@ -83,7 +91,7 @@ class _NewTrainingScreenState extends ConsumerState<NewTrainingScreen> {
             const SizedBox(height: 20),
             Row(
               children: [
-                _BackButton(onTap: () => context.go('/home')),
+                _BackButton(onTap: _goBack),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(

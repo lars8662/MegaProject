@@ -54,7 +54,7 @@ class HomeScreen extends StatelessWidget {
           itemBuilder: (context, index) => _DashboardMetricCard(item: _metrics[index]),
         ),
         const SizedBox(height: 12),
-        PrimaryButton(label: '+ Новая тренировка', onPressed: () => context.go('/new-training')),
+        PrimaryButton(label: '+ Новая тренировка', onPressed: () => context.push('/new-training')),
       ],
     );
   }
