@@ -10,15 +10,23 @@ class WorkoutDetailScreen extends ConsumerWidget {
 
   final String sessionId;
 
+  void _goBack(BuildContext context) {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/diary');
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sessions = ref.watch(trainingSessionsProvider);
     final session = _findSession(sessions, sessionId);
 
     if (session == null) {
-      return const Scaffold(
-        backgroundColor: Color(0xFF1A1D20),
-        body: SafeArea(child: _MissingWorkoutView()),
+      return Scaffold(
+        backgroundColor: const Color(0xFF1A1D20),
+        body: SafeArea(child: _MissingWorkoutView(onBack: () => _goBack(context))),
       );
     }
 
@@ -35,7 +43,7 @@ class WorkoutDetailScreen extends ConsumerWidget {
             const SizedBox(height: 18),
             Row(
               children: [
-                _BackButton(onTap: () => context.go('/diary')),
+                _BackButton(onTap: () => _goBack(context)),
                 const SizedBox(width: 10),
                 const Expanded(
                   child: Text(
@@ -116,7 +124,9 @@ class WorkoutDetailScreen extends ConsumerWidget {
 }
 
 class _MissingWorkoutView extends StatelessWidget {
-  const _MissingWorkoutView();
+  const _MissingWorkoutView({required this.onBack});
+
+  final VoidCallback onBack;
 
   @override
   Widget build(BuildContext context) {
@@ -131,7 +141,7 @@ class _MissingWorkoutView extends StatelessWidget {
           const SizedBox(height: 8),
           const Text('Возможно, запись уже удалена.', style: TextStyle(color: Color(0xB3F6F1E8), fontSize: 15, fontWeight: FontWeight.w700)),
           const SizedBox(height: 18),
-          _BackButton(onTap: () => context.go('/diary')),
+          _BackButton(onTap: onBack),
         ],
       ),
     );
