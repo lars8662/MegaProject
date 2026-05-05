@@ -108,7 +108,7 @@ class _DiarySubtitle extends ConsumerWidget {
     final savedSessions = ref.watch(trainingSessionsProvider);
 
     return Text(
-      savedSessions.isEmpty ? 'Лента тренировок и заметок по самочувствию.' : 'Свежие записи отображаются сверху списка.',
+      savedSessions.isEmpty ? 'Лента тренировок и заметок по самочувствию.' : 'Свежие записи открываются по нажатию.',
       style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: const Color(0xB3F6F1E8)),
     );
   }
@@ -188,7 +188,7 @@ class _WorkoutCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final card = Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(
@@ -225,9 +225,16 @@ class _WorkoutCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 5),
-          Text(
-            entry.type,
-            style: const TextStyle(fontSize: 13.2, fontWeight: FontWeight.w600, color: Color(0xFFD9D5CD)),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  entry.type,
+                  style: const TextStyle(fontSize: 13.2, fontWeight: FontWeight.w600, color: Color(0xFFD9D5CD)),
+                ),
+              ),
+              if (entry.id != null) const Icon(Icons.chevron_right_rounded, color: Color(0x80F6F1E8), size: 20),
+            ],
           ),
           const SizedBox(height: 6),
           Text(
@@ -241,6 +248,16 @@ class _WorkoutCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+
+    if (entry.id == null) {
+      return card;
+    }
+
+    return InkWell(
+      onTap: () => context.go('/workout/${entry.id}'),
+      borderRadius: BorderRadius.circular(16),
+      child: card,
     );
   }
 }
@@ -276,11 +293,13 @@ class _WorkoutEntry {
     required this.meta,
     this.durationBadge,
     this.icon,
+    this.id,
     this.isSaved = false,
   });
 
   factory _WorkoutEntry.fromSession(TrainingSession session) {
     return _WorkoutEntry(
+      id: session.id,
       date: session.formattedDate,
       type: '${session.type} · ${session.location}',
       detail: session.detail,
@@ -297,5 +316,6 @@ class _WorkoutEntry {
   final String meta;
   final String? durationBadge;
   final IconData? icon;
+  final String? id;
   final bool isSaved;
 }
