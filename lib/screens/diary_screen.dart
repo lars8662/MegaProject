@@ -35,7 +35,7 @@ class DiaryScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: 10),
-            _AddTrainingButton(onTap: () => context.go('/new-training')),
+            _AddTrainingButton(onTap: () => context.push('/new-training')),
           ],
         ),
         if (savedSessions.isNotEmpty) ...[
@@ -58,7 +58,7 @@ class DiaryScreen extends ConsumerWidget {
         ),
         const SizedBox(height: 14),
         if (savedEntries.isEmpty)
-          _EmptyDiaryCard(onTap: () => context.go('/new-training'))
+          _EmptyDiaryCard(onTap: () => context.push('/new-training'))
         else
           ...savedEntries.map(_WorkoutCard.new),
       ],
@@ -285,7 +285,7 @@ class _WorkoutCard extends StatelessWidget {
     );
 
     return InkWell(
-      onTap: () => context.go('/workout/${entry.id}'),
+      onTap: () => context.push('/workout/${entry.id}'),
       borderRadius: BorderRadius.circular(16),
       child: card,
     );
