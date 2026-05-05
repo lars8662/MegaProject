@@ -117,7 +117,7 @@ class _HomeSummary {
 
   String get readinessText {
     if (thisWeekSessions == 0) {
-      return 'Неделя свободная — можно запланировать первую тренировку';
+      return 'Сегодня можно запланировать первую тренировку';
     }
 
     if (readinessScore >= 80) {
@@ -125,10 +125,10 @@ class _HomeSummary {
     }
 
     if (readinessScore >= 65) {
-      return 'Нагрузка умеренная, следи за восстановлением';
+      return 'Умеренная нагрузка — держите баланс';
     }
 
-    return 'Неделя плотная, лучше добавить восстановление';
+    return 'Лучше восстановиться сегодня';
   }
 
   String get nextStepText {
@@ -142,7 +142,7 @@ class _HomeSummary {
     }
 
     if (readinessScore < 65) {
-      return 'Цель выполнена — лучше восстановиться';
+      return 'Цель выполнена — запланируйте восстановление';
     }
 
     return 'Цель выполнена — поддерживайте качество';
