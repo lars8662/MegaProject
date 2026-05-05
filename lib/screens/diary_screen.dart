@@ -10,35 +10,10 @@ class DiaryScreen extends ConsumerWidget {
 
   static const _filters = ['Все', 'Боулдеринг', 'Трудность', 'ОФП', 'Фингерборд', 'Заметки'];
 
-  static const _mockWorkouts = [
-    _WorkoutEntry(
-      date: '3 мая 2026',
-      type: 'Боулдеринг · Зал «Куб»',
-      detail: 'Проекты V4–V5, прогресс на силовых стартах.',
-      meta: 'Комментарии: добавить видео разбора',
-      durationBadge: '1ч 45мин',
-    ),
-    _WorkoutEntry(
-      date: '1 мая 2026',
-      type: 'Силовая ОФП',
-      detail: 'Кор, плечи и стабилизация. Средняя нагрузка.',
-      meta: 'Самочувствие: нормальное',
-      durationBadge: '55 мин',
-    ),
-    _WorkoutEntry(
-      date: '29 апреля 2026',
-      type: 'Трудность · 6b+',
-      detail: 'Техническая сессия: ноги, длинные перехваты, контроль дыхания.',
-      meta: 'Нагрузка: тяжёлая',
-      durationBadge: '2ч 10мин',
-    ),
-  ];
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final savedSessions = ref.watch(trainingSessionsProvider);
     final savedEntries = savedSessions.map(_WorkoutEntry.fromSession).toList();
-    final workouts = [...savedEntries, ..._mockWorkouts];
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
@@ -82,7 +57,10 @@ class DiaryScreen extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 14),
-        ...workouts.map(_WorkoutCard.new),
+        if (savedEntries.isEmpty)
+          _EmptyDiaryCard(onTap: () => context.go('/new-training'))
+        else
+          ...savedEntries.map(_WorkoutCard.new),
       ],
     );
   }
@@ -108,7 +86,7 @@ class _DiarySubtitle extends ConsumerWidget {
     final savedSessions = ref.watch(trainingSessionsProvider);
 
     return Text(
-      savedSessions.isEmpty ? 'Лента тренировок и заметок по самочувствию.' : 'Свежие записи отображаются сверху списка.',
+      savedSessions.isEmpty ? 'Создайте первую запись, чтобы начать отслеживать прогресс.' : 'Свежие записи открываются по нажатию.',
       style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: const Color(0xB3F6F1E8)),
     );
   }
@@ -135,6 +113,64 @@ class _AddTrainingButton extends StatelessWidget {
           ],
         ),
         child: const Icon(Icons.add_rounded, color: Color(0xFF1A1D20), size: 26),
+      ),
+    );
+  }
+}
+
+class _EmptyDiaryCard extends StatelessWidget {
+  const _EmptyDiaryCard({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFF252A2F),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0x164C5560)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: const Color(0x1FD4AF37),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(Icons.add_task_rounded, color: Color(0xFFD4AF37), size: 26),
+          ),
+          const SizedBox(height: 14),
+          const Text(
+            'Пока нет тренировок',
+            style: TextStyle(color: Color(0xFFF6F1E8), fontSize: 22, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Добавьте первую запись: тип тренировки, интенсивность и самочувствие.',
+            style: TextStyle(color: Color(0xB3F6F1E8), fontSize: 14, height: 1.35, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 46,
+            child: ElevatedButton.icon(
+              onPressed: onTap,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFD4AF37),
+                foregroundColor: const Color(0xFF1A1D20),
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              icon: const Icon(Icons.add_rounded, size: 20),
+              label: const Text('Добавить тренировку', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900)),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -188,13 +224,13 @@ class _WorkoutCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final card = Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(
-        color: entry.isSaved ? const Color(0xFF283038) : const Color(0xFF262B30),
+        color: const Color(0xFF283038),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: entry.isSaved ? const Color(0x5CD4AF37) : const Color(0x334C5560)),
+        border: Border.all(color: const Color(0x5CD4AF37)),
         boxShadow: const [
           BoxShadow(color: Color(0x22000000), blurRadius: 10, offset: Offset(0, 5)),
         ],
@@ -208,10 +244,8 @@ class _WorkoutCard extends StatelessWidget {
               Expanded(
                 child: Row(
                   children: [
-                    if (entry.icon != null) ...[
-                      Icon(entry.icon, size: 16, color: const Color(0xFFD4AF37)),
-                      const SizedBox(width: 6),
-                    ],
+                    Icon(entry.icon, size: 16, color: const Color(0xFFD4AF37)),
+                    const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         entry.date,
@@ -221,13 +255,20 @@ class _WorkoutCard extends StatelessWidget {
                   ],
                 ),
               ),
-              if (entry.durationBadge != null) _DurationBadge(label: entry.durationBadge!),
+              _DurationBadge(label: entry.durationBadge),
             ],
           ),
           const SizedBox(height: 5),
-          Text(
-            entry.type,
-            style: const TextStyle(fontSize: 13.2, fontWeight: FontWeight.w600, color: Color(0xFFD9D5CD)),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  entry.type,
+                  style: const TextStyle(fontSize: 13.2, fontWeight: FontWeight.w600, color: Color(0xFFD9D5CD)),
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, color: Color(0x80F6F1E8), size: 20),
+            ],
           ),
           const SizedBox(height: 6),
           Text(
@@ -241,6 +282,12 @@ class _WorkoutCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+
+    return InkWell(
+      onTap: () => context.go('/workout/${entry.id}'),
+      borderRadius: BorderRadius.circular(16),
+      child: card,
     );
   }
 }
@@ -270,32 +317,32 @@ class _DurationBadge extends StatelessWidget {
 
 class _WorkoutEntry {
   const _WorkoutEntry({
+    required this.id,
     required this.date,
     required this.type,
     required this.detail,
     required this.meta,
-    this.durationBadge,
-    this.icon,
-    this.isSaved = false,
+    required this.durationBadge,
+    required this.icon,
   });
 
   factory _WorkoutEntry.fromSession(TrainingSession session) {
     return _WorkoutEntry(
+      id: session.id,
       date: session.formattedDate,
       type: '${session.type} · ${session.location}',
       detail: session.detail,
       meta: session.meta,
       durationBadge: session.durationLabel,
       icon: session.icon,
-      isSaved: true,
     );
   }
 
+  final String id;
   final String date;
   final String type;
   final String detail;
   final String meta;
-  final String? durationBadge;
-  final IconData? icon;
-  final bool isSaved;
+  final String durationBadge;
+  final IconData icon;
 }

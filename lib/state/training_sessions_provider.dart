@@ -23,6 +23,21 @@ class TrainingSessionsNotifier extends Notifier<List<TrainingSession>> {
     await _saveSessions();
   }
 
+  Future<void> deleteSession(String id) async {
+    state = state.where((session) => session.id != id).toList(growable: false);
+    await _saveSessions();
+  }
+
+  TrainingSession? findById(String id) {
+    for (final session in state) {
+      if (session.id == id) {
+        return session;
+      }
+    }
+
+    return null;
+  }
+
   Future<void> _loadSessions() async {
     final preferences = await SharedPreferences.getInstance();
     final encodedSessions = preferences.getStringList(_storageKey) ?? const [];

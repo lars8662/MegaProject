@@ -11,6 +11,7 @@ import 'screens/new_training_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/progress_screen.dart';
 import 'screens/timers_screen.dart';
+import 'screens/workout_detail_screen.dart';
 
 void main() {
   runApp(const ProviderScope(child: ClimbingDiaryApp()));
@@ -73,6 +74,12 @@ final _router = GoRouter(
   initialLocation: '/home',
   routes: [
     GoRoute(path: '/new-training', pageBuilder: (context, state) => const NoTransitionPage(child: NewTrainingScreen())),
+    GoRoute(
+      path: '/workout/:id',
+      pageBuilder: (context, state) => NoTransitionPage(
+        child: WorkoutDetailScreen(sessionId: state.pathParameters['id'] ?? ''),
+      ),
+    ),
     ShellRoute(
       builder: (context, state, child) => AppShell(child: child),
       routes: [
