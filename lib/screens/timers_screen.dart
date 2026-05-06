@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../models/training_session.dart';
 import '../state/training_sessions_provider.dart';
@@ -106,11 +107,21 @@ class _TimersScreenState extends ConsumerState<TimersScreen> {
   @override
   void dispose() {
     _ticker?.cancel();
+    _disableWakeLock();
     super.dispose();
+  }
+
+  void _enableWakeLock() {
+    unawaited(WakelockPlus.enable());
+  }
+
+  void _disableWakeLock() {
+    unawaited(WakelockPlus.disable());
   }
 
   void _selectPreset(_TimerPreset preset) {
     _ticker?.cancel();
+    _disableWakeLock();
     setState(() {
       _preset = preset;
       _stages = _buildStages(preset);
@@ -127,12 +138,14 @@ class _TimersScreenState extends ConsumerState<TimersScreen> {
       _resetTimer();
     }
 
+    _enableWakeLock();
     setState(() => _isActiveMode = true);
     _start();
   }
 
   void _exitActiveMode() {
     _pause();
+    _disableWakeLock();
     setState(() => _isActiveMode = false);
   }
 
