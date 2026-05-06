@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -134,7 +137,12 @@ class AppShell extends StatelessWidget {
       body: SafeArea(child: child),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: currentIndex,
-        onTap: (index) => context.go(_tabs[index]),
+        onTap: (index) {
+          if (index != currentIndex) {
+            unawaited(HapticFeedback.selectionClick());
+          }
+          context.go(_tabs[index]);
+        },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Главная'),
           BottomNavigationBarItem(icon: Icon(Icons.book_rounded), label: 'Дневник'),
