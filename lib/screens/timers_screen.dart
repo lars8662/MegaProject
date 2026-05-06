@@ -15,7 +15,7 @@ class _TimersScreenState extends State<TimersScreen> {
   static final _presets = [
     _TimerPreset(
       title: 'Repeaters 7/3',
-      subtitle: 'Фингерборд · сила-выносливость',
+      subtitle: 'Фингерборд · выносливость',
       workLabel: 'Вис',
       restLabel: 'Отдых',
       workSeconds: 7,
@@ -25,7 +25,7 @@ class _TimersScreenState extends State<TimersScreen> {
     ),
     _TimerPreset(
       title: 'Max Hang',
-      subtitle: 'Максимальная сила пальцев',
+      subtitle: 'Максимальная сила',
       workLabel: 'Вис',
       restLabel: 'Отдых',
       workSeconds: 10,
@@ -35,13 +35,13 @@ class _TimersScreenState extends State<TimersScreen> {
     ),
     _TimerPreset(
       title: 'ARC / лёгкий объём',
-      subtitle: 'Аэробная база и техника',
+      subtitle: 'Аэробная база',
       workLabel: 'Лазание',
       restLabel: 'Пауза',
       workSeconds: 600,
       restSeconds: 120,
       rounds: 3,
-      icon: Icons.route_rounded,
+      icon: Icons.timeline_rounded,
     ),
   ];
 
@@ -172,24 +172,24 @@ class _TimersScreenState extends State<TimersScreen> {
     final bottomInset = MediaQuery.of(context).padding.bottom;
 
     return ListView(
-      padding: EdgeInsets.fromLTRB(16, 14, 16, 18 + bottomInset),
+      padding: EdgeInsets.fromLTRB(16, 10, 16, 18 + bottomInset),
       children: [
         const Text(
           'Таймеры',
           style: TextStyle(color: Color(0xFFF6F1E8), fontSize: 24, fontWeight: FontWeight.w900),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 5),
         const Text(
           'Протоколы для фингерборда, силы и объёма.',
           style: TextStyle(color: Color(0xB3F6F1E8), fontSize: 14, fontWeight: FontWeight.w700),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         _PresetSelector(
           presets: _presets,
           selected: _preset,
           onSelect: _selectPreset,
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         _TimerCard(
           preset: _preset,
           stage: _currentStage,
@@ -198,18 +198,18 @@ class _TimersScreenState extends State<TimersScreen> {
           overallProgress: _overallProgress,
           isFinished: _remainingSeconds == 0 && _stageIndex == _stages.length - 1,
         ),
-        const SizedBox(height: 14),
-        _NextStageCard(
-          stages: _stages,
-          stageIndex: _stageIndex,
-          remainingTotalLabel: _durationLabel((_totalSeconds - _completedSeconds).clamp(0, _totalSeconds)),
-        ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         _ControlsRow(
           isRunning: _isRunning,
           onReset: _resetTimer,
           onToggle: _toggleRunning,
           onSkip: _skipStage,
+        ),
+        const SizedBox(height: 12),
+        _NextStageCard(
+          stages: _stages,
+          stageIndex: _stageIndex,
+          remainingTotalLabel: _durationLabel((_totalSeconds - _completedSeconds).clamp(0, _totalSeconds)),
         ),
         const SizedBox(height: 12),
         _ProtocolSummaryCard(preset: _preset),
@@ -228,7 +228,7 @@ class _PresetSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 106,
+      height: 88,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: presets.length,
@@ -254,25 +254,25 @@ class _PresetChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(16),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
-        width: 194,
-        padding: const EdgeInsets.all(14),
+        width: 170,
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: selected ? const Color(0xFF343039) : const Color(0xFF252A2F),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: selected ? const Color(0xFFD4AF37) : const Color(0x164C5560), width: selected ? 1.4 : 1),
-          boxShadow: selected ? const [BoxShadow(color: Color(0x20D4AF37), blurRadius: 16, offset: Offset(0, 8))] : null,
+          boxShadow: selected ? const [BoxShadow(color: Color(0x20D4AF37), blurRadius: 14, offset: Offset(0, 7))] : null,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(preset.icon, color: selected ? const Color(0xFFD4AF37) : const Color(0x99F6F1E8), size: 22),
+            Icon(preset.icon, color: selected ? const Color(0xFFD4AF37) : const Color(0x99F6F1E8), size: 20),
             const Spacer(),
-            Text(preset.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFFF6F1E8), fontSize: 15, fontWeight: FontWeight.w900)),
-            const SizedBox(height: 3),
-            Text(preset.subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0x99F6F1E8), fontSize: 11, fontWeight: FontWeight.w700)),
+            Text(preset.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFFF6F1E8), fontSize: 14, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 2),
+            Text(preset.subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0x99F6F1E8), fontSize: 10, fontWeight: FontWeight.w700)),
           ],
         ),
       ),
@@ -304,10 +304,10 @@ class _TimerCard extends StatelessWidget {
     final timeLabel = isFinished ? '00:00' : _clockLabel(remainingSeconds);
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       decoration: BoxDecoration(
         color: const Color(0xFF252A2F),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(color: const Color(0x164C5560)),
       ),
       child: Column(
@@ -318,35 +318,35 @@ class _TimerCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(preset.title, style: const TextStyle(color: Color(0xFFF6F1E8), fontSize: 18, fontWeight: FontWeight.w900)),
-                    const SizedBox(height: 3),
-                    Text('Раунд ${stage.round} из ${preset.rounds}', style: const TextStyle(color: Color(0x99F6F1E8), fontSize: 13, fontWeight: FontWeight.w800)),
+                    Text(preset.title, style: const TextStyle(color: Color(0xFFF6F1E8), fontSize: 17, fontWeight: FontWeight.w900)),
+                    const SizedBox(height: 2),
+                    Text('Раунд ${stage.round} из ${preset.rounds}', style: const TextStyle(color: Color(0x99F6F1E8), fontSize: 12, fontWeight: FontWeight.w800)),
                   ],
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
                 decoration: BoxDecoration(color: stageColor.withValues(alpha: 0.16), borderRadius: BorderRadius.circular(999)),
-                child: Text(displayLabel, style: TextStyle(color: stageColor, fontSize: 12, fontWeight: FontWeight.w900)),
+                child: Text(displayLabel, style: TextStyle(color: stageColor, fontSize: 11, fontWeight: FontWeight.w900)),
               ),
             ],
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: 14),
           SizedBox(
-            width: 224,
-            height: 224,
+            width: 188,
+            height: 188,
             child: Stack(
               fit: StackFit.expand,
               children: [
                 CircularProgressIndicator(
                   value: stageProgress,
-                  strokeWidth: 14,
+                  strokeWidth: 12,
                   strokeCap: StrokeCap.round,
                   backgroundColor: const Color(0x334C5560),
                   valueColor: AlwaysStoppedAnimation<Color>(stageColor),
                 ),
                 Container(
-                  margin: const EdgeInsets.all(26),
+                  margin: const EdgeInsets.all(22),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: const LinearGradient(
@@ -354,33 +354,33 @@ class _TimerCard extends StatelessWidget {
                       end: Alignment.bottomRight,
                       colors: [Color(0xFF1D2530), Color(0xFF11161D)],
                     ),
-                    boxShadow: [BoxShadow(color: stageColor.withValues(alpha: 0.18), blurRadius: 24, spreadRadius: 2)],
+                    boxShadow: [BoxShadow(color: stageColor.withValues(alpha: 0.18), blurRadius: 22, spreadRadius: 2)],
                   ),
                 ),
                 Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(displayLabel, style: const TextStyle(color: Color(0xB3F6F1E8), fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 1.6)),
-                      const SizedBox(height: 6),
-                      Text(timeLabel, style: const TextStyle(color: Color(0xFFF6F1E8), fontSize: 42, fontWeight: FontWeight.w900, height: 1)),
+                      Text(displayLabel, style: const TextStyle(color: Color(0xB3F6F1E8), fontSize: 14, fontWeight: FontWeight.w900, letterSpacing: 1.4)),
+                      const SizedBox(height: 5),
+                      Text(timeLabel, style: const TextStyle(color: Color(0xFFF6F1E8), fontSize: 38, fontWeight: FontWeight.w900, height: 1)),
                     ],
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 14),
           ClipRRect(
             borderRadius: BorderRadius.circular(999),
             child: LinearProgressIndicator(
               value: overallProgress,
-              minHeight: 8,
+              minHeight: 6,
               backgroundColor: const Color(0x224C5560),
               valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFD4AF37)),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 7),
           Row(
             children: [
               const Text('Прогресс протокола', style: TextStyle(color: Color(0x99F6F1E8), fontSize: 12, fontWeight: FontWeight.w800)),
@@ -407,32 +407,32 @@ class _NextStageCard extends StatelessWidget {
     final nextStage = hasNext ? stages[stageIndex + 1] : null;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: const Color(0xFF252A2F),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: const Color(0x164C5560)),
       ),
       child: Row(
         children: [
           Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(color: const Color(0x1FD4AF37), borderRadius: BorderRadius.circular(15)),
-            child: const Icon(Icons.skip_next_rounded, color: Color(0xFFD4AF37), size: 25),
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(color: const Color(0x1FD4AF37), borderRadius: BorderRadius.circular(14)),
+            child: const Icon(Icons.skip_next_rounded, color: Color(0xFFD4AF37), size: 24),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 11),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(hasNext ? 'Следующий этап' : 'Финиш протокола', style: const TextStyle(color: Color(0x99F6F1E8), fontSize: 12, fontWeight: FontWeight.w900)),
-                const SizedBox(height: 4),
-                Text(hasNext ? '${nextStage!.label}: ${_clockLabel(nextStage.seconds)}' : 'Все этапы выполнены', style: const TextStyle(color: Color(0xFFF6F1E8), fontSize: 15, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 3),
+                Text(hasNext ? '${nextStage!.label}: ${_clockLabel(nextStage.seconds)}' : 'Все этапы выполнены', style: const TextStyle(color: Color(0xFFF6F1E8), fontSize: 14, fontWeight: FontWeight.w900)),
               ],
             ),
           ),
-          Text(remainingTotalLabel, style: const TextStyle(color: Color(0xFFD4AF37), fontSize: 14, fontWeight: FontWeight.w900)),
+          Text(remainingTotalLabel, style: const TextStyle(color: Color(0xFFD4AF37), fontSize: 13, fontWeight: FontWeight.w900)),
         ],
       ),
     );
@@ -452,24 +452,24 @@ class _ControlsRow extends StatelessWidget {
     return Row(
       children: [
         _RoundControlButton(icon: Icons.restart_alt_rounded, onTap: onReset),
-        const SizedBox(width: 14),
+        const SizedBox(width: 12),
         Expanded(
           child: SizedBox(
-            height: 58,
+            height: 54,
             child: ElevatedButton.icon(
               onPressed: onToggle,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFD4AF37),
                 foregroundColor: const Color(0xFF1A1D20),
                 elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(17)),
               ),
-              icon: Icon(isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded, size: 28),
+              icon: Icon(isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded, size: 27),
               label: Text(isRunning ? 'Пауза' : 'Старт', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
             ),
           ),
         ),
-        const SizedBox(width: 14),
+        const SizedBox(width: 12),
         _RoundControlButton(icon: Icons.skip_next_rounded, onTap: onSkip),
       ],
     );
@@ -486,16 +486,16 @@ class _RoundControlButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(20),
       child: Container(
-        width: 58,
-        height: 58,
+        width: 54,
+        height: 54,
         decoration: BoxDecoration(
           color: const Color(0xFF252A2F),
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(color: const Color(0x164C5560)),
         ),
-        child: Icon(icon, color: const Color(0xFFF6F1E8), size: 27),
+        child: Icon(icon, color: const Color(0xFFF6F1E8), size: 26),
       ),
     );
   }
@@ -509,17 +509,17 @@ class _ProtocolSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: const Color(0xFF252A2F),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: const Color(0x164C5560)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Протокол', style: TextStyle(color: Color(0xFFF6F1E8), fontSize: 16, fontWeight: FontWeight.w900)),
-          const SizedBox(height: 10),
+          const Text('Протокол', style: TextStyle(color: Color(0xFFF6F1E8), fontSize: 15, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 8),
           _ProtocolLine(label: 'Работа', value: '${preset.workLabel} · ${_clockLabel(preset.workSeconds)}'),
           _ProtocolLine(label: 'Отдых', value: '${preset.restLabel} · ${_clockLabel(preset.restSeconds)}'),
           _ProtocolLine(label: 'Раунды', value: '${preset.rounds}'),
@@ -539,11 +539,11 @@ class _ProtocolLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 7),
       child: Row(
         children: [
-          Expanded(child: Text(label, style: const TextStyle(color: Color(0x99F6F1E8), fontSize: 13, fontWeight: FontWeight.w800))),
-          Text(value, style: const TextStyle(color: Color(0xFFF6F1E8), fontSize: 13, fontWeight: FontWeight.w900)),
+          Expanded(child: Text(label, style: const TextStyle(color: Color(0x99F6F1E8), fontSize: 12, fontWeight: FontWeight.w800))),
+          Text(value, style: const TextStyle(color: Color(0xFFF6F1E8), fontSize: 12, fontWeight: FontWeight.w900)),
         ],
       ),
     );
