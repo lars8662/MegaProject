@@ -491,7 +491,7 @@ class _PresetSelector extends StatelessWidget {
     return Column(
       children: [
         SizedBox(
-          height: 96,
+          height: 88,
           child: ListView.separated(
             clipBehavior: Clip.none,
             padding: const EdgeInsets.only(right: 20),
@@ -555,17 +555,17 @@ class _PresetChip extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
         width: width,
-        padding: const EdgeInsets.all(13),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: selected ? const Color(0xFF343039) : const Color(0xFF252A2F),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: selected ? _workColor : const Color(0x164C5560), width: selected ? 1.4 : 1),
-          boxShadow: selected ? const [BoxShadow(color: Color(0x20D4AF37), blurRadius: 14, offset: Offset(0, 7))] : null,
+          boxShadow: selected ? const [BoxShadow(color: Color(0x14D4AF37), blurRadius: 10, offset: Offset(0, 5))] : null,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(preset.icon, color: selected ? _workColor : const Color(0x99F6F1E8), size: 21),
+            Icon(preset.icon, color: selected ? _workColor : const Color(0x99F6F1E8), size: 19),
             const Spacer(),
             Text(preset.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFFF6F1E8), fontSize: 15, fontWeight: FontWeight.w900)),
             const SizedBox(height: 2),
@@ -586,11 +586,12 @@ class _SelectedProtocolCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFF252A2F),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0x164C5560)),
+        boxShadow: const [BoxShadow(color: Color(0x14000000), blurRadius: 12, offset: Offset(0, 6))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -616,30 +617,22 @@ class _SelectedProtocolCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 18),
-          Row(
-            children: [
-              Expanded(child: _MetricPill(label: 'Работа', value: _clockLabel(preset.workSeconds))),
-              const SizedBox(width: 10),
-              Expanded(child: _MetricPill(label: 'Отдых', value: _clockLabel(preset.restSeconds))),
-              const SizedBox(width: 10),
-              Expanded(child: _MetricPill(label: 'Раунды', value: '${preset.rounds}')),
-            ],
-          ),
+          const SizedBox(height: 16),
+          _ProtocolMetrics(preset: preset),
           const SizedBox(height: 12),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-            decoration: BoxDecoration(color: const Color(0xFF1F2429), borderRadius: BorderRadius.circular(16)),
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
+            decoration: BoxDecoration(color: const Color(0xFF1F2429), borderRadius: BorderRadius.circular(14)),
             child: Row(
               children: [
-                const Icon(Icons.hourglass_top_rounded, color: Color(0x99F6F1E8), size: 18),
-                const SizedBox(width: 8),
+                const Icon(Icons.hourglass_top_rounded, color: Color(0xCCD4AF37), size: 19),
+                const SizedBox(width: 9),
                 const Expanded(child: Text('Общее время с подготовкой', style: TextStyle(color: Color(0x99F6F1E8), fontSize: 12, fontWeight: FontWeight.w800))),
-                Text(_durationLabel(preset.totalSeconds + _preparationSeconds), style: const TextStyle(color: Color(0xFFF6F1E8), fontSize: 13, fontWeight: FontWeight.w900)),
+                Text(_durationLabel(preset.totalSeconds + _preparationSeconds), style: const TextStyle(color: Color(0xFFD4AF37), fontSize: 17, fontWeight: FontWeight.w900)),
               ],
             ),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 16),
           SizedBox(
             height: 56,
             width: double.infinity,
@@ -661,26 +654,58 @@ class _SelectedProtocolCard extends StatelessWidget {
   }
 }
 
-class _MetricPill extends StatelessWidget {
-  const _MetricPill({required this.label, required this.value});
+class _ProtocolMetrics extends StatelessWidget {
+  const _ProtocolMetrics({required this.preset});
+
+  final _TimerPreset preset;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1F2429).withValues(alpha: 0.62),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0x104C5560)),
+      ),
+      child: Row(
+        children: [
+          Expanded(child: _MetricColumn(label: 'Работа', value: _clockLabel(preset.workSeconds))),
+          const _MetricDivider(),
+          Expanded(child: _MetricColumn(label: 'Отдых', value: _clockLabel(preset.restSeconds))),
+          const _MetricDivider(),
+          Expanded(child: _MetricColumn(label: 'Раунды', value: '${preset.rounds}')),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetricColumn extends StatelessWidget {
+  const _MetricColumn({required this.label, required this.value});
 
   final String label;
   final String value;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-      decoration: BoxDecoration(color: const Color(0xFF1F2429), borderRadius: BorderRadius.circular(16)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: const TextStyle(color: Color(0x99F6F1E8), fontSize: 11, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 4),
-          Text(value, style: const TextStyle(color: Color(0xFFF6F1E8), fontSize: 15, fontWeight: FontWeight.w900)),
-        ],
-      ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(value, textAlign: TextAlign.center, style: const TextStyle(color: Color(0xFFF6F1E8), fontSize: 17, fontWeight: FontWeight.w900)),
+        const SizedBox(height: 4),
+        Text(label, textAlign: TextAlign.center, style: const TextStyle(color: Color(0x99F6F1E8), fontSize: 12, fontWeight: FontWeight.w800)),
+      ],
     );
+  }
+}
+
+class _MetricDivider extends StatelessWidget {
+  const _MetricDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(width: 1, height: 32, color: const Color(0x144C5560));
   }
 }
 
