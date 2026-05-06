@@ -3,19 +3,23 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../models/training_session.dart';
+import '../state/training_sessions_provider.dart';
 
 const int _preparationSeconds = 5;
 const Color _workColor = Color(0xFFD4AF37);
 const Color _restColor = Color(0xFFA995E8);
 
-class TimersScreen extends StatefulWidget {
+class TimersScreen extends ConsumerStatefulWidget {
   const TimersScreen({super.key});
 
   @override
-  State<TimersScreen> createState() => _TimersScreenState();
+  ConsumerState<TimersScreen> createState() => _TimersScreenState();
 }
 
-class _TimersScreenState extends State<TimersScreen> {
+class _TimersScreenState extends ConsumerState<TimersScreen> {
   static final _presets = [
     _TimerPreset(
       title: 'Repeaters 7/3',
@@ -55,6 +59,7 @@ class _TimersScreenState extends State<TimersScreen> {
   int _remainingSeconds = 0;
   bool _isRunning = false;
   bool _isActiveMode = false;
+  bool _hasPromptedSave = false;
   Timer? _ticker;
 
   _TimerStage get _currentStage => _stages[_stageIndex];
@@ -113,6 +118,7 @@ class _TimersScreenState extends State<TimersScreen> {
       _remainingSeconds = _stages.first.seconds;
       _isRunning = false;
       _isActiveMode = false;
+      _hasPromptedSave = false;
     });
   }
 
@@ -171,6 +177,7 @@ class _TimersScreenState extends State<TimersScreen> {
         _remainingSeconds = 0;
         _isRunning = false;
       });
+      _promptSaveFinishedSession();
       return;
     }
 
@@ -190,7 +197,78 @@ class _TimersScreenState extends State<TimersScreen> {
       _stageIndex = 0;
       _remainingSeconds = _stages.first.seconds;
       _isRunning = false;
+      _hasPromptedSave = false;
     });
+  }
+
+  Future<void> _promptSaveFinishedSession() async {
+    if (_hasPromptedSave || !mounted) {
+      return;
+    }
+
+    _hasPromptedSave = true;
+
+    final shouldSave = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF252A2F),
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: const Text('Сохранить тренировку?', style: TextStyle(color: Color(0xFFF6F1E8), fontWeight: FontWeight.w900)),
+          content: Text(
+            'Протокол ${_preset.title} завершён. Добавить его в дневник тренировок?',
+            style: const TextStyle(color: Color(0xB3F6F1E8), fontWeight: FontWeight.w700),
+          ),
+          actionsPadding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Не сейчас', style: TextStyle(color: Color(0x99F6F1E8), fontWeight: FontWeight.w800)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _workColor,
+                foregroundColor: const Color(0xFF1A1D20),
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+              child: const Text('Сохранить', style: TextStyle(fontWeight: FontWeight.w900)),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldSave != true || !mounted) {
+      return;
+    }
+
+    await ref.read(trainingSessionsProvider.notifier).addSession(_sessionFromFinishedTimer());
+
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Тренировка сохранена в дневник')),
+    );
+  }
+
+  TrainingSession _sessionFromFinishedTimer() {
+    final totalMinutes = (_totalSeconds + 59) ~/ 60;
+
+    return TrainingSession(
+      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      type: _sessionTypeForPreset(_preset),
+      date: DateTime.now(),
+      durationMinutes: totalMinutes,
+      location: 'Таймер',
+      intensity: _intensityForPreset(_preset),
+      effort: 'Норма',
+      notes: 'Завершён таймер: ${_preset.title}. Работа: ${_clockLabel(_preset.workSeconds)}, отдых: ${_clockLabel(_preset.restSeconds)}, раунды: ${_preset.rounds}.',
+    );
   }
 
   @override
@@ -412,7 +490,7 @@ class _PresetSelector extends StatelessWidget {
             },
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         _CarouselIndicator(count: presets.length, selectedIndex: selectedIndex),
       ],
     );
@@ -433,11 +511,11 @@ class _CarouselIndicator extends StatelessWidget {
         final isSelected = index == selectedIndex;
         return AnimatedContainer(
           duration: const Duration(milliseconds: 160),
-          width: isSelected ? 18 : 6,
-          height: 6,
+          width: isSelected ? 16 : 5,
+          height: 5,
           margin: const EdgeInsets.symmetric(horizontal: 3),
           decoration: BoxDecoration(
-            color: isSelected ? _workColor : const Color(0x334C5560),
+            color: isSelected ? const Color(0x99D4AF37) : const Color(0x224C5560),
             borderRadius: BorderRadius.circular(999),
           ),
         );
@@ -852,6 +930,26 @@ Color _stageColor(_TimerStage stage) {
   }
 
   return _restColor;
+}
+
+String _sessionTypeForPreset(_TimerPreset preset) {
+  if (preset.title.contains('ARC')) {
+    return 'Трудность';
+  }
+
+  return 'Фингерборд';
+}
+
+int _intensityForPreset(_TimerPreset preset) {
+  if (preset.title == 'Max Hang') {
+    return 8;
+  }
+
+  if (preset.title.contains('ARC')) {
+    return 4;
+  }
+
+  return 7;
 }
 
 String _clockLabel(int secondsTotal) {
