@@ -67,8 +67,12 @@ ThemeData _buildTheme() {
     ),
     bottomNavigationBarTheme: BottomNavigationBarThemeData(
       selectedItemColor: accent,
-      unselectedItemColor: onSurface.withValues(alpha: 0.65),
-      backgroundColor: const Color(0xFF20252A),
+      unselectedItemColor: onSurface.withValues(alpha: 0.42),
+      backgroundColor: const Color(0xFF171A1E),
+      selectedIconTheme: const IconThemeData(size: 25),
+      unselectedIconTheme: const IconThemeData(size: 23),
+      selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 11),
+      unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11),
       type: BottomNavigationBarType.fixed,
     ),
   );
