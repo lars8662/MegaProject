@@ -172,7 +172,7 @@ class _TimersScreenState extends State<TimersScreen> {
     final bottomInset = MediaQuery.of(context).padding.bottom;
 
     return ListView(
-      padding: EdgeInsets.fromLTRB(16, 6, 16, 18 + bottomInset),
+      padding: EdgeInsets.fromLTRB(16, 8, 16, 18 + bottomInset),
       children: [
         const Text(
           'Таймеры',
@@ -183,13 +183,13 @@ class _TimersScreenState extends State<TimersScreen> {
           'Протоколы для фингерборда, силы и объёма.',
           style: TextStyle(color: Color(0xB3F6F1E8), fontSize: 13, fontWeight: FontWeight.w700),
         ),
-        const SizedBox(height: 9),
+        const SizedBox(height: 10),
         _PresetSelector(
           presets: _presets,
           selected: _preset,
           onSelect: _selectPreset,
         ),
-        const SizedBox(height: 9),
+        const SizedBox(height: 10),
         _TimerCard(
           preset: _preset,
           stage: _currentStage,
@@ -211,7 +211,7 @@ class _TimersScreenState extends State<TimersScreen> {
           stageIndex: _stageIndex,
           remainingTotalLabel: _durationLabel((_totalSeconds - _completedSeconds).clamp(0, _totalSeconds)),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 18),
         _ProtocolSummaryCard(preset: _preset),
       ],
     );
@@ -228,11 +228,11 @@ class _PresetSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 78,
+      height: 80,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: presets.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 9),
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
         itemBuilder: (context, index) {
           final preset = presets[index];
           final isSelected = preset == selected;
@@ -257,7 +257,7 @@ class _PresetChip extends StatelessWidget {
       borderRadius: BorderRadius.circular(15),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
-        width: 160,
+        width: 156,
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: selected ? const Color(0xFF343039) : const Color(0xFF252A2F),
@@ -303,6 +303,12 @@ class _TimerCard extends StatelessWidget {
     final displayLabel = isFinished ? 'Готово' : stage.label.toUpperCase();
     final timeLabel = isFinished ? '00:00' : _clockLabel(remainingSeconds);
 
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final ringSize = (screenWidth * 0.5).clamp(178.0, 196.0).toDouble();
+    final ringStroke = (ringSize * 0.065).clamp(11.0, 13.0).toDouble();
+    final innerMargin = (ringSize * 0.12).clamp(20.0, 24.0).toDouble();
+    final timeFontSize = (ringSize * 0.21).clamp(37.0, 42.0).toDouble();
+
     return Container(
       padding: const EdgeInsets.fromLTRB(15, 14, 15, 14),
       decoration: BoxDecoration(
@@ -331,22 +337,22 @@ class _TimerCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           SizedBox(
-            width: 164,
-            height: 164,
+            width: ringSize,
+            height: ringSize,
             child: Stack(
               fit: StackFit.expand,
               children: [
                 CircularProgressIndicator(
                   value: stageProgress,
-                  strokeWidth: 11,
+                  strokeWidth: ringStroke,
                   strokeCap: StrokeCap.round,
                   backgroundColor: const Color(0x334C5560),
                   valueColor: AlwaysStoppedAnimation<Color>(stageColor),
                 ),
                 Container(
-                  margin: const EdgeInsets.all(20),
+                  margin: EdgeInsets.all(innerMargin),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: const LinearGradient(
@@ -363,14 +369,14 @@ class _TimerCard extends StatelessWidget {
                     children: [
                       Text(displayLabel, style: const TextStyle(color: Color(0xB3F6F1E8), fontSize: 13, fontWeight: FontWeight.w900, letterSpacing: 1.3)),
                       const SizedBox(height: 4),
-                      Text(timeLabel, style: const TextStyle(color: Color(0xFFF6F1E8), fontSize: 35, fontWeight: FontWeight.w900, height: 1)),
+                      Text(timeLabel, style: TextStyle(color: const Color(0xFFF6F1E8), fontSize: timeFontSize, fontWeight: FontWeight.w900, height: 1)),
                     ],
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           ClipRRect(
             borderRadius: BorderRadius.circular(999),
             child: LinearProgressIndicator(
