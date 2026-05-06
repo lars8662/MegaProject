@@ -628,7 +628,7 @@ class _SelectedProtocolCard extends StatelessWidget {
                 const Icon(Icons.hourglass_top_rounded, color: Color(0xCCD4AF37), size: 19),
                 const SizedBox(width: 9),
                 const Expanded(child: Text('Общее время с подготовкой', style: TextStyle(color: Color(0x99F6F1E8), fontSize: 12, fontWeight: FontWeight.w800))),
-                Text(_durationLabel(preset.totalSeconds + _preparationSeconds), style: const TextStyle(color: Color(0xFFD4AF37), fontSize: 17, fontWeight: FontWeight.w900)),
+                Text(_durationLabel(preset.totalSeconds + _preparationSeconds), style: const TextStyle(color: Color(0xCCF6F1E8), fontSize: 15, fontWeight: FontWeight.w800)),
               ],
             ),
           ),
