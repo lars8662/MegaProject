@@ -3,6 +3,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
@@ -119,6 +120,16 @@ class _TimersScreenState extends ConsumerState<TimersScreen> {
     unawaited(WakelockPlus.disable());
   }
 
+  void _playStageTransitionFeedback() {
+    unawaited(HapticFeedback.mediumImpact());
+    unawaited(SystemSound.play(SystemSoundType.click));
+  }
+
+  void _playFinishFeedback() {
+    unawaited(HapticFeedback.heavyImpact());
+    unawaited(SystemSound.play(SystemSoundType.alert));
+  }
+
   void _selectPreset(_TimerPreset preset) {
     _ticker?.cancel();
     _disableWakeLock();
@@ -185,6 +196,7 @@ class _TimersScreenState extends ConsumerState<TimersScreen> {
 
   void _goToNextStage() {
     if (_stageIndex >= _stages.length - 1) {
+      _playFinishFeedback();
       _ticker?.cancel();
       setState(() {
         _remainingSeconds = 0;
@@ -194,6 +206,7 @@ class _TimersScreenState extends ConsumerState<TimersScreen> {
       return;
     }
 
+    _playStageTransitionFeedback();
     setState(() {
       _stageIndex += 1;
       _remainingSeconds = _currentStage.seconds;
