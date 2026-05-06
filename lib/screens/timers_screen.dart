@@ -3,6 +3,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
@@ -153,6 +154,7 @@ class _TimersScreenState extends ConsumerState<TimersScreen> {
     if (_isRunning) {
       _pause();
     } else {
+      unawaited(HapticFeedback.selectionClick());
       _start();
     }
   }
