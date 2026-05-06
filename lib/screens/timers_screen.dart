@@ -59,6 +59,8 @@ class _TimersScreenState extends State<TimersScreen> {
 
   _TimerStage get _currentStage => _stages[_stageIndex];
 
+  int get _selectedPresetIndex => _presets.indexOf(_preset);
+
   int get _totalSeconds => _stages.fold(0, (total, stage) => total + stage.seconds);
 
   int get _completedSeconds {
@@ -215,6 +217,7 @@ class _TimersScreenState extends State<TimersScreen> {
     return _PresetPickerView(
       presets: _presets,
       selected: _preset,
+      selectedIndex: _selectedPresetIndex,
       onSelect: _selectPreset,
       onStart: _enterActiveMode,
     );
@@ -222,10 +225,11 @@ class _TimersScreenState extends State<TimersScreen> {
 }
 
 class _PresetPickerView extends StatelessWidget {
-  const _PresetPickerView({required this.presets, required this.selected, required this.onSelect, required this.onStart});
+  const _PresetPickerView({required this.presets, required this.selected, required this.selectedIndex, required this.onSelect, required this.onStart});
 
   final List<_TimerPreset> presets;
   final _TimerPreset selected;
+  final int selectedIndex;
   final ValueChanged<_TimerPreset> onSelect;
   final VoidCallback onStart;
 
@@ -249,6 +253,7 @@ class _PresetPickerView extends StatelessWidget {
         _PresetSelector(
           presets: presets,
           selected: selected,
+          selectedIndex: selectedIndex,
           onSelect: onSelect,
         ),
         const SizedBox(height: 16),
@@ -378,34 +383,73 @@ class _ActiveTimerHeader extends StatelessWidget {
 }
 
 class _PresetSelector extends StatelessWidget {
-  const _PresetSelector({required this.presets, required this.selected, required this.onSelect});
+  const _PresetSelector({required this.presets, required this.selected, required this.selectedIndex, required this.onSelect});
 
   final List<_TimerPreset> presets;
   final _TimerPreset selected;
+  final int selectedIndex;
   final ValueChanged<_TimerPreset> onSelect;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 96,
-      child: ListView.separated(
-        padding: const EdgeInsets.only(right: 16),
-        scrollDirection: Axis.horizontal,
-        itemCount: presets.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
-        itemBuilder: (context, index) {
-          final preset = presets[index];
-          final isSelected = preset == selected;
-          return _PresetChip(preset: preset, selected: isSelected, onTap: () => onSelect(preset));
-        },
-      ),
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final cardWidth = ((screenWidth - 54) / 2).clamp(146.0, 164.0).toDouble();
+
+    return Column(
+      children: [
+        SizedBox(
+          height: 96,
+          child: ListView.separated(
+            clipBehavior: Clip.none,
+            padding: const EdgeInsets.only(right: 20),
+            scrollDirection: Axis.horizontal,
+            itemCount: presets.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (context, index) {
+              final preset = presets[index];
+              final isSelected = preset == selected;
+              return _PresetChip(width: cardWidth, preset: preset, selected: isSelected, onTap: () => onSelect(preset));
+            },
+          ),
+        ),
+        const SizedBox(height: 8),
+        _CarouselIndicator(count: presets.length, selectedIndex: selectedIndex),
+      ],
+    );
+  }
+}
+
+class _CarouselIndicator extends StatelessWidget {
+  const _CarouselIndicator({required this.count, required this.selectedIndex});
+
+  final int count;
+  final int selectedIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(count, (index) {
+        final isSelected = index == selectedIndex;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          width: isSelected ? 18 : 6,
+          height: 6,
+          margin: const EdgeInsets.symmetric(horizontal: 3),
+          decoration: BoxDecoration(
+            color: isSelected ? _workColor : const Color(0x334C5560),
+            borderRadius: BorderRadius.circular(999),
+          ),
+        );
+      }),
     );
   }
 }
 
 class _PresetChip extends StatelessWidget {
-  const _PresetChip({required this.preset, required this.selected, required this.onTap});
+  const _PresetChip({required this.width, required this.preset, required this.selected, required this.onTap});
 
+  final double width;
   final _TimerPreset preset;
   final bool selected;
   final VoidCallback onTap;
@@ -417,7 +461,7 @@ class _PresetChip extends StatelessWidget {
       borderRadius: BorderRadius.circular(18),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
-        width: 174,
+        width: width,
         padding: const EdgeInsets.all(13),
         decoration: BoxDecoration(
           color: selected ? const Color(0xFF343039) : const Color(0xFF252A2F),
