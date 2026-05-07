@@ -32,6 +32,7 @@ class _TimersScreenState extends ConsumerState<TimersScreen> {
       restSeconds: 3,
       rounds: 6,
       preparationSeconds: _defaultPreparationSeconds,
+      isCustom: false,
       icon: Icons.back_hand_rounded,
     ),
     _TimerPreset(
@@ -43,6 +44,7 @@ class _TimersScreenState extends ConsumerState<TimersScreen> {
       restSeconds: 5,
       rounds: 6,
       preparationSeconds: _defaultPreparationSeconds,
+      isCustom: false,
       icon: Icons.back_hand_rounded,
     ),
     _TimerPreset(
@@ -54,6 +56,7 @@ class _TimersScreenState extends ConsumerState<TimersScreen> {
       restSeconds: 4,
       rounds: 5,
       preparationSeconds: _defaultPreparationSeconds,
+      isCustom: false,
       icon: Icons.touch_app_rounded,
     ),
     _TimerPreset(
@@ -65,6 +68,7 @@ class _TimersScreenState extends ConsumerState<TimersScreen> {
       restSeconds: 3,
       rounds: 36,
       preparationSeconds: _defaultPreparationSeconds,
+      isCustom: false,
       icon: Icons.bolt_rounded,
     ),
     _TimerPreset(
@@ -76,6 +80,7 @@ class _TimersScreenState extends ConsumerState<TimersScreen> {
       restSeconds: 180,
       rounds: 5,
       preparationSeconds: _defaultPreparationSeconds,
+      isCustom: false,
       icon: Icons.fitness_center_rounded,
     ),
     _TimerPreset(
@@ -87,6 +92,7 @@ class _TimersScreenState extends ConsumerState<TimersScreen> {
       restSeconds: 120,
       rounds: 3,
       preparationSeconds: _defaultPreparationSeconds,
+      isCustom: false,
       icon: Icons.timeline_rounded,
     ),
   ];
@@ -686,7 +692,6 @@ class _CreateCustomProtocolCard extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.keyboard_arrow_up_rounded, color: Color(0x99F6F1E8), size: 24),
           ],
         ),
       ),
@@ -755,6 +760,7 @@ class _CustomProtocolSheetState extends State<_CustomProtocolSheet> {
         restSeconds: int.parse(_restController.text),
         rounds: int.parse(_roundsController.text),
         preparationSeconds: int.parse(_preparationController.text),
+        isCustom: true,
         icon: Icons.tune_rounded,
       ),
     );
@@ -801,57 +807,80 @@ class _CustomProtocolSheetState extends State<_CustomProtocolSheet> {
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _CustomProtocolField(
-                          controller: _workController,
-                          label: 'Работа, seconds',
-                          icon: Icons.flash_on_rounded,
-                          keyboardType: TextInputType.number,
-                          validator: (value) => _validateSeconds(value, allowZero: false),
-                          textInputAction: TextInputAction.next,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _CustomProtocolField(
-                          controller: _restController,
-                          label: 'Отдых, seconds',
-                          icon: Icons.self_improvement_rounded,
-                          keyboardType: TextInputType.number,
-                          validator: (value) => _validateSeconds(value, allowZero: true),
-                          textInputAction: TextInputAction.next,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _CustomProtocolField(
-                          controller: _roundsController,
-                          label: 'Раунды',
-                          icon: Icons.repeat_rounded,
-                          keyboardType: TextInputType.number,
-                          validator: (value) => _validateSeconds(value, allowZero: false),
-                          textInputAction: TextInputAction.next,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _CustomProtocolField(
-                          controller: _preparationController,
-                          label: 'Подготовка, seconds',
-                          icon: Icons.hourglass_top_rounded,
-                          keyboardType: TextInputType.number,
-                          validator: (value) => _validateSeconds(value, allowZero: true),
-                          textInputAction: TextInputAction.done,
-                          onFieldSubmitted: (_) => _confirm(),
-                        ),
-                      ),
-                    ],
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final workField = _CustomProtocolField(
+                        controller: _workController,
+                        label: 'Работа',
+                        helperText: 'секунды',
+                        icon: Icons.flash_on_rounded,
+                        keyboardType: TextInputType.number,
+                        validator: (value) => _validateSeconds(value, allowZero: false),
+                        textInputAction: TextInputAction.next,
+                      );
+                      final restField = _CustomProtocolField(
+                        controller: _restController,
+                        label: 'Отдых',
+                        helperText: 'секунды',
+                        icon: Icons.self_improvement_rounded,
+                        keyboardType: TextInputType.number,
+                        validator: (value) => _validateSeconds(value, allowZero: true),
+                        textInputAction: TextInputAction.next,
+                      );
+                      final roundsField = _CustomProtocolField(
+                        controller: _roundsController,
+                        label: 'Раунды',
+                        helperText: 'количество',
+                        icon: Icons.repeat_rounded,
+                        keyboardType: TextInputType.number,
+                        validator: (value) => _validateSeconds(value, allowZero: false),
+                        textInputAction: TextInputAction.next,
+                      );
+                      final preparationField = _CustomProtocolField(
+                        controller: _preparationController,
+                        label: 'Подготовка',
+                        helperText: 'секунды',
+                        icon: Icons.hourglass_top_rounded,
+                        keyboardType: TextInputType.number,
+                        validator: (value) => _validateSeconds(value, allowZero: true),
+                        textInputAction: TextInputAction.done,
+                        onFieldSubmitted: (_) => _confirm(),
+                      );
+
+                      if (constraints.maxWidth < 360) {
+                        return Column(
+                          children: [
+                            workField,
+                            const SizedBox(height: 12),
+                            restField,
+                            const SizedBox(height: 12),
+                            roundsField,
+                            const SizedBox(height: 12),
+                            preparationField,
+                          ],
+                        );
+                      }
+
+                      return Column(
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(child: workField),
+                              const SizedBox(width: 10),
+                              Expanded(child: restField),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(child: roundsField),
+                              const SizedBox(width: 10),
+                              Expanded(child: preparationField),
+                            ],
+                          ),
+                        ],
+                      );
+                    },
                   ),
                   const SizedBox(height: 18),
                   SizedBox(
@@ -883,6 +912,7 @@ class _CustomProtocolField extends StatelessWidget {
   const _CustomProtocolField({
     required this.controller,
     required this.label,
+    this.helperText,
     required this.icon,
     required this.validator,
     this.keyboardType,
@@ -892,6 +922,7 @@ class _CustomProtocolField extends StatelessWidget {
 
   final TextEditingController controller;
   final String label;
+  final String? helperText;
   final IconData icon;
   final String? Function(String?) validator;
   final TextInputType? keyboardType;
@@ -912,6 +943,8 @@ class _CustomProtocolField extends StatelessWidget {
       style: const TextStyle(color: Color(0xFFF6F1E8), fontWeight: FontWeight.w800),
       decoration: InputDecoration(
         labelText: label,
+        helperText: helperText,
+        helperStyle: const TextStyle(color: Color(0x80F6F1E8), fontWeight: FontWeight.w700),
         labelStyle: const TextStyle(color: Color(0x99F6F1E8), fontWeight: FontWeight.w700),
         prefixIcon: Icon(icon, color: const Color(0x99F6F1E8), size: 20),
         filled: true,
@@ -1301,6 +1334,7 @@ class _TimerPreset {
     required this.restSeconds,
     required this.rounds,
     required this.preparationSeconds,
+    required this.isCustom,
     required this.icon,
   });
 
@@ -1312,6 +1346,7 @@ class _TimerPreset {
   final int restSeconds;
   final int rounds;
   final int preparationSeconds;
+  final bool isCustom;
   final IconData icon;
 
   int get totalSeconds => (workSeconds + restSeconds) * rounds - restSeconds;
@@ -1356,6 +1391,10 @@ Color _stageColor(_TimerStage stage) {
 }
 
 String _sessionTypeForPreset(_TimerPreset preset) {
+  if (preset.isCustom) {
+    return 'ОФП';
+  }
+
   if (preset.title.contains('ARC')) {
     return 'Трудность';
   }
