@@ -1055,27 +1055,19 @@ class _CustomProtocolField extends StatelessWidget {
   const _CustomProtocolField({
     required this.controller,
     required this.label,
-    this.suffixText,
     required this.icon,
     required this.validator,
-    this.keyboardType,
     this.textInputAction,
-    this.onFieldSubmitted,
   });
 
   final TextEditingController controller;
   final String label;
-  final String? suffixText;
   final IconData icon;
   final String? Function(String?) validator;
-  final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
-  final ValueChanged<String>? onFieldSubmitted;
 
   @override
   Widget build(BuildContext context) {
-    final isNumber = keyboardType == TextInputType.number;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1085,16 +1077,11 @@ class _CustomProtocolField extends StatelessWidget {
         ),
         TextFormField(
           controller: controller,
-          keyboardType: keyboardType,
           textInputAction: textInputAction,
-          onFieldSubmitted: onFieldSubmitted,
           validator: validator,
-          inputFormatters: isNumber ? [FilteringTextInputFormatter.digitsOnly] : null,
           style: const TextStyle(color: Color(0xFFF6F1E8), fontWeight: FontWeight.w800),
           decoration: InputDecoration(
             prefixIcon: Icon(icon, color: const Color(0x99F6F1E8), size: 20),
-            suffixText: suffixText,
-            suffixStyle: const TextStyle(color: Color(0x99F6F1E8), fontWeight: FontWeight.w800),
             filled: true,
             fillColor: const Color(0xFF1F2429),
             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),

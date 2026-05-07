@@ -261,7 +261,7 @@ class _StatsGrid extends StatelessWidget {
         _StatCard(label: 'Интенсивность', value: '${session.intensity}/10', icon: Icons.local_fire_department_rounded),
         _StatCard(label: 'Самочувствие', value: session.effort, icon: Icons.favorite_rounded),
         if (session.isTimerSession)
-          _StatCard(label: 'Источник', value: 'Таймер', icon: Icons.timer_outlined)
+          const _StatCard(label: 'Источник', value: 'Таймер', icon: Icons.timer_outlined)
         else
           _StatCard(label: 'Место', value: session.location, icon: Icons.location_on_outlined),
       ],
