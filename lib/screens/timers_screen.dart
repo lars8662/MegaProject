@@ -7,7 +7,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
+import '../models/custom_timer_protocol.dart';
 import '../models/training_session.dart';
+import '../state/custom_timer_protocols_provider.dart';
 import '../state/training_sessions_provider.dart';
 
 const int _defaultPreparationSeconds = 5;
@@ -187,22 +189,34 @@ class _TimersScreenState extends ConsumerState<TimersScreen> {
   }
 
   Future<void> _openCustomProtocolForm() async {
-    final customPreset = await showModalBottomSheet<_TimerPreset>(
+    final customProtocol = await showModalBottomSheet<CustomTimerProtocol>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => const _CustomProtocolSheet(),
     );
 
-    if (customPreset == null || !mounted) {
+    if (customProtocol == null || !mounted) {
       return;
     }
+
+    await ref.read(customTimerProtocolsProvider.notifier).addProtocol(customProtocol);
+
+    if (!mounted) {
+      return;
+    }
+
+    _startCustomProtocol(customProtocol);
+  }
+
+  void _startCustomProtocol(CustomTimerProtocol protocol) {
+    final preset = _customProtocolPreset(protocol);
 
     _ticker?.cancel();
     _enableWakeLock();
     setState(() {
-      _preset = customPreset;
-      _stages = _buildStages(customPreset);
+      _preset = preset;
+      _stages = _buildStages(preset);
       _stageIndex = 0;
       _remainingSeconds = _stages.first.seconds;
       _isRunning = false;
@@ -357,6 +371,8 @@ class _TimersScreenState extends ConsumerState<TimersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final customProtocols = ref.watch(customTimerProtocolsProvider);
+
     if (_isActiveMode) {
       return _ActiveTimerView(
         preset: _preset,
@@ -382,20 +398,24 @@ class _TimersScreenState extends ConsumerState<TimersScreen> {
       selectedIndex: _selectedPresetIndex,
       onSelect: _selectPreset,
       onStart: _enterActiveMode,
+      customProtocols: customProtocols,
       onCreateCustom: _openCustomProtocolForm,
+      onStartCustom: _startCustomProtocol,
     );
   }
 }
 
 class _PresetPickerView extends StatelessWidget {
-  const _PresetPickerView({required this.presets, required this.selected, required this.selectedIndex, required this.onSelect, required this.onStart, required this.onCreateCustom});
+  const _PresetPickerView({required this.presets, required this.selected, required this.selectedIndex, required this.onSelect, required this.onStart, required this.customProtocols, required this.onCreateCustom, required this.onStartCustom});
 
   final List<_TimerPreset> presets;
   final _TimerPreset selected;
   final int selectedIndex;
   final ValueChanged<_TimerPreset> onSelect;
   final VoidCallback onStart;
+  final List<CustomTimerProtocol> customProtocols;
   final VoidCallback onCreateCustom;
+  final ValueChanged<CustomTimerProtocol> onStartCustom;
 
   @override
   Widget build(BuildContext context) {
@@ -422,6 +442,10 @@ class _PresetPickerView extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         _CreateCustomProtocolCard(onTap: onCreateCustom),
+        if (customProtocols.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          _CustomProtocolsSection(protocols: customProtocols, onStart: onStartCustom),
+        ],
         const SizedBox(height: 16),
         _SelectedProtocolCard(preset: selected, onStart: onStart),
       ],
@@ -688,9 +712,84 @@ class _CreateCustomProtocolCard extends StatelessWidget {
                 children: [
                   Text('Создать свой протокол', style: TextStyle(color: Color(0xFFF6F1E8), fontSize: 17, fontWeight: FontWeight.w900)),
                   SizedBox(height: 4),
-                  Text('Один запуск без сохранения в пресеты', style: TextStyle(color: Color(0x99F6F1E8), fontSize: 12, fontWeight: FontWeight.w700)),
+                  Text('Настройте и сохраните для повторного запуска', style: TextStyle(color: Color(0x99F6F1E8), fontSize: 12, fontWeight: FontWeight.w700)),
                 ],
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+class _CustomProtocolsSection extends StatelessWidget {
+  const _CustomProtocolsSection({required this.protocols, required this.onStart});
+
+  final List<CustomTimerProtocol> protocols;
+  final ValueChanged<CustomTimerProtocol> onStart;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Мои протоколы', style: TextStyle(color: Color(0xFFF6F1E8), fontSize: 18, fontWeight: FontWeight.w900)),
+        const SizedBox(height: 10),
+        for (var index = 0; index < protocols.length; index++) ...[
+          _CustomProtocolCard(protocol: protocols[index], onTap: () => onStart(protocols[index])),
+          if (index < protocols.length - 1) const SizedBox(height: 10),
+        ],
+      ],
+    );
+  }
+}
+
+class _CustomProtocolCard extends StatelessWidget {
+  const _CustomProtocolCard({required this.protocol, required this.onTap});
+
+  final CustomTimerProtocol protocol;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF252A2F),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0x164C5560)),
+          boxShadow: const [BoxShadow(color: Color(0x08000000), blurRadius: 16, offset: Offset(0, 8))],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(color: const Color(0x18D4AF37), borderRadius: BorderRadius.circular(14)),
+              child: const Icon(Icons.tune_rounded, color: _workColor, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(protocol.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFFF6F1E8), fontSize: 16, fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 4),
+                  Text(_customProtocolSummary(protocol), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0x99F6F1E8), fontSize: 12, fontWeight: FontWeight.w700)),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(color: const Color(0xFFD4AF37), borderRadius: BorderRadius.circular(14)),
+              child: const Icon(Icons.play_arrow_rounded, color: Color(0xFF1A1D20), size: 24),
             ),
           ],
         ),
@@ -750,18 +849,18 @@ class _CustomProtocolSheetState extends State<_CustomProtocolSheet> {
       return;
     }
 
+    final now = DateTime.now();
+
     Navigator.of(context).pop(
-      _TimerPreset(
-        title: _titleController.text.trim(),
-        subtitle: 'Пользовательский · один запуск',
-        workLabel: 'Работа',
-        restLabel: 'Отдых',
+      CustomTimerProtocol(
+        id: now.microsecondsSinceEpoch.toString(),
+        name: _titleController.text.trim(),
         workSeconds: int.parse(_workController.text),
         restSeconds: int.parse(_restController.text),
         rounds: int.parse(_roundsController.text),
         preparationSeconds: int.parse(_preparationController.text),
-        isCustom: true,
-        icon: Icons.tune_rounded,
+        createdAt: now,
+        updatedAt: now,
       ),
     );
   }
@@ -797,7 +896,7 @@ class _CustomProtocolSheetState extends State<_CustomProtocolSheet> {
                   const SizedBox(height: 18),
                   const Text('Создать свой протокол', style: TextStyle(color: Color(0xFFF6F1E8), fontSize: 22, fontWeight: FontWeight.w900)),
                   const SizedBox(height: 6),
-                  const Text('Запустим таймер сразу после подтверждения. Пресет не будет сохранён.', style: TextStyle(color: Color(0x99F6F1E8), fontSize: 13, fontWeight: FontWeight.w700)),
+                  const Text('Настройте протокол. Он сохранится в ваших таймерах.', style: TextStyle(color: Color(0x99F6F1E8), fontSize: 13, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 18),
                   _CustomProtocolField(
                     controller: _titleController,
@@ -812,7 +911,7 @@ class _CustomProtocolSheetState extends State<_CustomProtocolSheet> {
                       final workField = _CustomProtocolField(
                         controller: _workController,
                         label: 'Работа',
-                        helperText: 'секунды',
+                        suffixText: 'сек.',
                         icon: Icons.flash_on_rounded,
                         keyboardType: TextInputType.number,
                         validator: (value) => _validateSeconds(value, allowZero: false),
@@ -821,7 +920,7 @@ class _CustomProtocolSheetState extends State<_CustomProtocolSheet> {
                       final restField = _CustomProtocolField(
                         controller: _restController,
                         label: 'Отдых',
-                        helperText: 'секунды',
+                        suffixText: 'сек.',
                         icon: Icons.self_improvement_rounded,
                         keyboardType: TextInputType.number,
                         validator: (value) => _validateSeconds(value, allowZero: true),
@@ -830,7 +929,7 @@ class _CustomProtocolSheetState extends State<_CustomProtocolSheet> {
                       final roundsField = _CustomProtocolField(
                         controller: _roundsController,
                         label: 'Раунды',
-                        helperText: 'количество',
+                        suffixText: 'раз',
                         icon: Icons.repeat_rounded,
                         keyboardType: TextInputType.number,
                         validator: (value) => _validateSeconds(value, allowZero: false),
@@ -839,7 +938,7 @@ class _CustomProtocolSheetState extends State<_CustomProtocolSheet> {
                       final preparationField = _CustomProtocolField(
                         controller: _preparationController,
                         label: 'Подготовка',
-                        helperText: 'секунды',
+                        suffixText: 'сек.',
                         icon: Icons.hourglass_top_rounded,
                         keyboardType: TextInputType.number,
                         validator: (value) => _validateSeconds(value, allowZero: true),
@@ -895,7 +994,7 @@ class _CustomProtocolSheetState extends State<_CustomProtocolSheet> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                       ),
                       icon: const Icon(Icons.play_arrow_rounded, size: 28),
-                      label: const Text('Создать и начать', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+                      label: const Text('Сохранить и начать', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
                     ),
                   ),
                 ],
@@ -912,7 +1011,7 @@ class _CustomProtocolField extends StatelessWidget {
   const _CustomProtocolField({
     required this.controller,
     required this.label,
-    this.helperText,
+    this.suffixText,
     required this.icon,
     required this.validator,
     this.keyboardType,
@@ -922,7 +1021,7 @@ class _CustomProtocolField extends StatelessWidget {
 
   final TextEditingController controller;
   final String label;
-  final String? helperText;
+  final String? suffixText;
   final IconData icon;
   final String? Function(String?) validator;
   final TextInputType? keyboardType;
@@ -933,39 +1032,47 @@ class _CustomProtocolField extends StatelessWidget {
   Widget build(BuildContext context) {
     final isNumber = keyboardType == TextInputType.number;
 
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      textInputAction: textInputAction,
-      onFieldSubmitted: onFieldSubmitted,
-      validator: validator,
-      inputFormatters: isNumber ? [FilteringTextInputFormatter.digitsOnly] : null,
-      style: const TextStyle(color: Color(0xFFF6F1E8), fontWeight: FontWeight.w800),
-      decoration: InputDecoration(
-        labelText: label,
-        helperText: helperText,
-        helperStyle: const TextStyle(color: Color(0x80F6F1E8), fontWeight: FontWeight.w700),
-        labelStyle: const TextStyle(color: Color(0x99F6F1E8), fontWeight: FontWeight.w700),
-        prefixIcon: Icon(icon, color: const Color(0x99F6F1E8), size: 20),
-        filled: true,
-        fillColor: const Color(0xFF1F2429),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0x164C5560)),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 6),
+          child: Text(label, style: const TextStyle(color: Color(0x99F6F1E8), fontSize: 12, fontWeight: FontWeight.w800)),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xCCD4AF37), width: 1.2),
+        TextFormField(
+          controller: controller,
+          keyboardType: keyboardType,
+          textInputAction: textInputAction,
+          onFieldSubmitted: onFieldSubmitted,
+          validator: validator,
+          inputFormatters: isNumber ? [FilteringTextInputFormatter.digitsOnly] : null,
+          style: const TextStyle(color: Color(0xFFF6F1E8), fontWeight: FontWeight.w800),
+          decoration: InputDecoration(
+            prefixIcon: Icon(icon, color: const Color(0x99F6F1E8), size: 20),
+            suffixText: suffixText,
+            suffixStyle: const TextStyle(color: Color(0x99F6F1E8), fontWeight: FontWeight.w800),
+            filled: true,
+            fillColor: const Color(0xFF1F2429),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: Color(0x164C5560)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: Color(0xCCD4AF37), width: 1.2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: Color(0xFFE57373)),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: Color(0xFFE57373), width: 1.2),
+            ),
+          ),
         ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFE57373)),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFE57373), width: 1.2),
-        ),
-      ),
+      ],
     );
   }
 }
@@ -1380,6 +1487,44 @@ List<_TimerStage> _buildStages(_TimerPreset preset) {
   }
 
   return stages;
+}
+
+
+_TimerPreset _customProtocolPreset(CustomTimerProtocol protocol) {
+  return _TimerPreset(
+    title: protocol.name,
+    subtitle: 'Пользовательский · сохранённый',
+    workLabel: 'Работа',
+    restLabel: 'Отдых',
+    workSeconds: protocol.workSeconds,
+    restSeconds: protocol.restSeconds,
+    rounds: protocol.rounds,
+    preparationSeconds: protocol.preparationSeconds,
+    isCustom: true,
+    icon: Icons.tune_rounded,
+  );
+}
+
+String _customProtocolSummary(CustomTimerProtocol protocol) {
+  return 'Работа ${protocol.workSeconds} сек · Отдых ${protocol.restSeconds} сек · ${protocol.rounds} ${_roundsLabel(protocol.rounds)}';
+}
+
+String _roundsLabel(int rounds) {
+  final lastTwoDigits = rounds % 100;
+  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) {
+    return 'раундов';
+  }
+
+  final lastDigit = rounds % 10;
+  if (lastDigit == 1) {
+    return 'раунд';
+  }
+
+  if (lastDigit >= 2 && lastDigit <= 4) {
+    return 'раунда';
+  }
+
+  return 'раундов';
 }
 
 Color _stageColor(_TimerStage stage) {
