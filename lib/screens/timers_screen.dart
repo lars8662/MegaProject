@@ -10,7 +10,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import '../models/training_session.dart';
 import '../state/training_sessions_provider.dart';
 
-const int _preparationSeconds = 5;
+const int _defaultPreparationSeconds = 5;
 const Color _workColor = Color(0xFFD4AF37);
 const Color _restColor = Color(0xFFA995E8);
 
@@ -31,6 +31,7 @@ class _TimersScreenState extends ConsumerState<TimersScreen> {
       workSeconds: 7,
       restSeconds: 3,
       rounds: 6,
+      preparationSeconds: _defaultPreparationSeconds,
       icon: Icons.back_hand_rounded,
     ),
     _TimerPreset(
@@ -41,6 +42,7 @@ class _TimersScreenState extends ConsumerState<TimersScreen> {
       workSeconds: 10,
       restSeconds: 5,
       rounds: 6,
+      preparationSeconds: _defaultPreparationSeconds,
       icon: Icons.back_hand_rounded,
     ),
     _TimerPreset(
@@ -51,6 +53,7 @@ class _TimersScreenState extends ConsumerState<TimersScreen> {
       workSeconds: 2,
       restSeconds: 4,
       rounds: 5,
+      preparationSeconds: _defaultPreparationSeconds,
       icon: Icons.touch_app_rounded,
     ),
     _TimerPreset(
@@ -61,6 +64,7 @@ class _TimersScreenState extends ConsumerState<TimersScreen> {
       workSeconds: 7,
       restSeconds: 3,
       rounds: 36,
+      preparationSeconds: _defaultPreparationSeconds,
       icon: Icons.bolt_rounded,
     ),
     _TimerPreset(
@@ -71,6 +75,7 @@ class _TimersScreenState extends ConsumerState<TimersScreen> {
       workSeconds: 10,
       restSeconds: 180,
       rounds: 5,
+      preparationSeconds: _defaultPreparationSeconds,
       icon: Icons.fitness_center_rounded,
     ),
     _TimerPreset(
@@ -81,6 +86,7 @@ class _TimersScreenState extends ConsumerState<TimersScreen> {
       workSeconds: 600,
       restSeconds: 120,
       rounds: 3,
+      preparationSeconds: _defaultPreparationSeconds,
       icon: Icons.timeline_rounded,
     ),
   ];
@@ -171,6 +177,33 @@ class _TimersScreenState extends ConsumerState<TimersScreen> {
 
     _enableWakeLock();
     setState(() => _isActiveMode = true);
+    _start();
+  }
+
+  Future<void> _openCustomProtocolForm() async {
+    final customPreset = await showModalBottomSheet<_TimerPreset>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const _CustomProtocolSheet(),
+    );
+
+    if (customPreset == null || !mounted) {
+      return;
+    }
+
+    _ticker?.cancel();
+    _enableWakeLock();
+    setState(() {
+      _preset = customPreset;
+      _stages = _buildStages(customPreset);
+      _stageIndex = 0;
+      _remainingSeconds = _stages.first.seconds;
+      _isRunning = false;
+      _isActiveMode = true;
+      _hasPromptedSave = false;
+    });
+    unawaited(HapticFeedback.selectionClick());
     _start();
   }
 
@@ -343,18 +376,20 @@ class _TimersScreenState extends ConsumerState<TimersScreen> {
       selectedIndex: _selectedPresetIndex,
       onSelect: _selectPreset,
       onStart: _enterActiveMode,
+      onCreateCustom: _openCustomProtocolForm,
     );
   }
 }
 
 class _PresetPickerView extends StatelessWidget {
-  const _PresetPickerView({required this.presets, required this.selected, required this.selectedIndex, required this.onSelect, required this.onStart});
+  const _PresetPickerView({required this.presets, required this.selected, required this.selectedIndex, required this.onSelect, required this.onStart, required this.onCreateCustom});
 
   final List<_TimerPreset> presets;
   final _TimerPreset selected;
   final int selectedIndex;
   final ValueChanged<_TimerPreset> onSelect;
   final VoidCallback onStart;
+  final VoidCallback onCreateCustom;
 
   @override
   Widget build(BuildContext context) {
@@ -379,6 +414,8 @@ class _PresetPickerView extends StatelessWidget {
           selectedIndex: selectedIndex,
           onSelect: onSelect,
         ),
+        const SizedBox(height: 16),
+        _CreateCustomProtocolCard(onTap: onCreateCustom),
         const SizedBox(height: 16),
         _SelectedProtocolCard(preset: selected, onStart: onStart),
       ],
@@ -465,7 +502,7 @@ class _ActiveTimerHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final stageColor = _stageColor(stage);
-    final roundLabel = stage.isPreparation ? 'Подготовка 5 сек' : 'Раунд ${stage.round} из ${preset.rounds}';
+    final roundLabel = stage.isPreparation ? 'Подготовка ${preset.preparationSeconds} сек' : 'Раунд ${stage.round} из ${preset.rounds}';
     final label = isFinished ? 'ГОТОВО' : stage.label.toUpperCase();
 
     return Row(
@@ -607,6 +644,299 @@ class _PresetChip extends StatelessWidget {
   }
 }
 
+
+class _CreateCustomProtocolCard extends StatelessWidget {
+  const _CreateCustomProtocolCard({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF2A2E34), Color(0xFF20252A)],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0x44D4AF37)),
+          boxShadow: const [BoxShadow(color: Color(0x0DD4AF37), blurRadius: 18, offset: Offset(0, 8))],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(color: const Color(0x18D4AF37), borderRadius: BorderRadius.circular(14)),
+              child: const Icon(Icons.add_rounded, color: _workColor, size: 28),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Создать свой протокол', style: TextStyle(color: Color(0xFFF6F1E8), fontSize: 17, fontWeight: FontWeight.w900)),
+                  SizedBox(height: 4),
+                  Text('Один запуск без сохранения в пресеты', style: TextStyle(color: Color(0x99F6F1E8), fontSize: 12, fontWeight: FontWeight.w700)),
+                ],
+              ),
+            ),
+            const Icon(Icons.keyboard_arrow_up_rounded, color: Color(0x99F6F1E8), size: 24),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CustomProtocolSheet extends StatefulWidget {
+  const _CustomProtocolSheet();
+
+  @override
+  State<_CustomProtocolSheet> createState() => _CustomProtocolSheetState();
+}
+
+class _CustomProtocolSheetState extends State<_CustomProtocolSheet> {
+  final _formKey = GlobalKey<FormState>();
+  final _titleController = TextEditingController(text: 'Свой протокол');
+  final _workController = TextEditingController(text: '5');
+  final _restController = TextEditingController(text: '5');
+  final _roundsController = TextEditingController(text: '2');
+  final _preparationController = TextEditingController(text: '5');
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _workController.dispose();
+    _restController.dispose();
+    _roundsController.dispose();
+    _preparationController.dispose();
+    super.dispose();
+  }
+
+  String? _validateTitle(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Введите название';
+    }
+
+    return null;
+  }
+
+  String? _validateSeconds(String? value, {required bool allowZero}) {
+    final number = int.tryParse(value ?? '');
+    if (number == null) {
+      return 'Введите секунды';
+    }
+
+    if (allowZero ? number < 0 : number <= 0) {
+      return allowZero ? 'Не меньше 0' : 'Больше 0';
+    }
+
+    return null;
+  }
+
+  void _confirm() {
+    if (_formKey.currentState?.validate() != true) {
+      return;
+    }
+
+    Navigator.of(context).pop(
+      _TimerPreset(
+        title: _titleController.text.trim(),
+        subtitle: 'Пользовательский · один запуск',
+        workLabel: 'Работа',
+        restLabel: 'Отдых',
+        workSeconds: int.parse(_workController.text),
+        restSeconds: int.parse(_restController.text),
+        rounds: int.parse(_roundsController.text),
+        preparationSeconds: int.parse(_preparationController.text),
+        icon: Icons.tune_rounded,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
+        decoration: const BoxDecoration(
+          color: Color(0xFF252A2F),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 46,
+                      height: 5,
+                      decoration: BoxDecoration(color: const Color(0x334C5560), borderRadius: BorderRadius.circular(999)),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  const Text('Создать свой протокол', style: TextStyle(color: Color(0xFFF6F1E8), fontSize: 22, fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 6),
+                  const Text('Запустим таймер сразу после подтверждения. Пресет не будет сохранён.', style: TextStyle(color: Color(0x99F6F1E8), fontSize: 13, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 18),
+                  _CustomProtocolField(
+                    controller: _titleController,
+                    label: 'Название',
+                    icon: Icons.edit_note_rounded,
+                    validator: _validateTitle,
+                    textInputAction: TextInputAction.next,
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _CustomProtocolField(
+                          controller: _workController,
+                          label: 'Работа, seconds',
+                          icon: Icons.flash_on_rounded,
+                          keyboardType: TextInputType.number,
+                          validator: (value) => _validateSeconds(value, allowZero: false),
+                          textInputAction: TextInputAction.next,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _CustomProtocolField(
+                          controller: _restController,
+                          label: 'Отдых, seconds',
+                          icon: Icons.self_improvement_rounded,
+                          keyboardType: TextInputType.number,
+                          validator: (value) => _validateSeconds(value, allowZero: true),
+                          textInputAction: TextInputAction.next,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _CustomProtocolField(
+                          controller: _roundsController,
+                          label: 'Раунды',
+                          icon: Icons.repeat_rounded,
+                          keyboardType: TextInputType.number,
+                          validator: (value) => _validateSeconds(value, allowZero: false),
+                          textInputAction: TextInputAction.next,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _CustomProtocolField(
+                          controller: _preparationController,
+                          label: 'Подготовка, seconds',
+                          icon: Icons.hourglass_top_rounded,
+                          keyboardType: TextInputType.number,
+                          validator: (value) => _validateSeconds(value, allowZero: true),
+                          textInputAction: TextInputAction.done,
+                          onFieldSubmitted: (_) => _confirm(),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  SizedBox(
+                    height: 56,
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _confirm,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _workColor,
+                        foregroundColor: const Color(0xFF1A1D20),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                      ),
+                      icon: const Icon(Icons.play_arrow_rounded, size: 28),
+                      label: const Text('Создать и начать', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CustomProtocolField extends StatelessWidget {
+  const _CustomProtocolField({
+    required this.controller,
+    required this.label,
+    required this.icon,
+    required this.validator,
+    this.keyboardType,
+    this.textInputAction,
+    this.onFieldSubmitted,
+  });
+
+  final TextEditingController controller;
+  final String label;
+  final IconData icon;
+  final String? Function(String?) validator;
+  final TextInputType? keyboardType;
+  final TextInputAction? textInputAction;
+  final ValueChanged<String>? onFieldSubmitted;
+
+  @override
+  Widget build(BuildContext context) {
+    final isNumber = keyboardType == TextInputType.number;
+
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      textInputAction: textInputAction,
+      onFieldSubmitted: onFieldSubmitted,
+      validator: validator,
+      inputFormatters: isNumber ? [FilteringTextInputFormatter.digitsOnly] : null,
+      style: const TextStyle(color: Color(0xFFF6F1E8), fontWeight: FontWeight.w800),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(color: Color(0x99F6F1E8), fontWeight: FontWeight.w700),
+        prefixIcon: Icon(icon, color: const Color(0x99F6F1E8), size: 20),
+        filled: true,
+        fillColor: const Color(0xFF1F2429),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Color(0x164C5560)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Color(0xCCD4AF37), width: 1.2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Color(0xFFE57373)),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Color(0xFFE57373), width: 1.2),
+        ),
+      ),
+    );
+  }
+}
+
 class _SelectedProtocolCard extends StatelessWidget {
   const _SelectedProtocolCard({required this.preset, required this.onStart});
 
@@ -674,7 +1004,7 @@ class _SelectedProtocolCard extends StatelessWidget {
                 const Icon(Icons.hourglass_top_rounded, color: Color(0x99F6F1E8), size: 18),
                 const SizedBox(width: 8),
                 const Expanded(child: Text('Общее время с подготовкой', style: TextStyle(color: Color(0x99F6F1E8), fontSize: 12, fontWeight: FontWeight.w800))),
-                Text(_durationLabel(preset.totalSeconds + _preparationSeconds), style: const TextStyle(color: Color(0xDDF6F1E8), fontSize: 14, fontWeight: FontWeight.w800)),
+                Text(_durationLabel(preset.totalSecondsWithPreparation), style: const TextStyle(color: Color(0xDDF6F1E8), fontSize: 14, fontWeight: FontWeight.w800)),
               ],
             ),
           ),
@@ -970,6 +1300,7 @@ class _TimerPreset {
     required this.workSeconds,
     required this.restSeconds,
     required this.rounds,
+    required this.preparationSeconds,
     required this.icon,
   });
 
@@ -980,9 +1311,12 @@ class _TimerPreset {
   final int workSeconds;
   final int restSeconds;
   final int rounds;
+  final int preparationSeconds;
   final IconData icon;
 
   int get totalSeconds => (workSeconds + restSeconds) * rounds - restSeconds;
+
+  int get totalSecondsWithPreparation => totalSeconds + preparationSeconds;
 }
 
 class _TimerStage {
@@ -996,14 +1330,16 @@ class _TimerStage {
 }
 
 List<_TimerStage> _buildStages(_TimerPreset preset) {
-  final stages = <_TimerStage>[
-    const _TimerStage(label: 'Подготовка', seconds: _preparationSeconds, round: 1, isWork: false, isPreparation: true),
-  ];
+  final stages = <_TimerStage>[];
+
+  if (preset.preparationSeconds > 0) {
+    stages.add(_TimerStage(label: 'Подготовка', seconds: preset.preparationSeconds, round: 1, isWork: false, isPreparation: true));
+  }
 
   for (var round = 1; round <= preset.rounds; round++) {
     stages.add(_TimerStage(label: preset.workLabel, seconds: preset.workSeconds, round: round, isWork: true, isPreparation: false));
 
-    if (round != preset.rounds) {
+    if (round != preset.rounds && preset.restSeconds > 0) {
       stages.add(_TimerStage(label: preset.restLabel, seconds: preset.restSeconds, round: round, isWork: false, isPreparation: false));
     }
   }
