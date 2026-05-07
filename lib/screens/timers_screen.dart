@@ -521,7 +521,7 @@ class _PresetSelector extends StatelessWidget {
     return Column(
       children: [
         SizedBox(
-          height: 96,
+          height: 88,
           child: ListView.separated(
             clipBehavior: Clip.none,
             padding: const EdgeInsets.only(right: 20),
@@ -535,7 +535,7 @@ class _PresetSelector extends StatelessWidget {
             },
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         _CarouselIndicator(count: presets.length, selectedIndex: selectedIndex),
       ],
     );
@@ -581,21 +581,21 @@ class _PresetChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(17),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
         width: width,
-        padding: const EdgeInsets.all(13),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFF343039) : const Color(0xFF252A2F),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: selected ? _workColor : const Color(0x164C5560), width: selected ? 1.4 : 1),
-          boxShadow: selected ? const [BoxShadow(color: Color(0x20D4AF37), blurRadius: 14, offset: Offset(0, 7))] : null,
+          color: selected ? const Color(0xFF302D35) : const Color(0xFF252A2F),
+          borderRadius: BorderRadius.circular(17),
+          border: Border.all(color: selected ? const Color(0xCCD4AF37) : const Color(0x164C5560), width: selected ? 1.2 : 1),
+          boxShadow: selected ? const [BoxShadow(color: Color(0x14D4AF37), blurRadius: 10, offset: Offset(0, 5))] : null,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(preset.icon, color: selected ? _workColor : const Color(0x99F6F1E8), size: 21),
+            Icon(preset.icon, color: selected ? _workColor : const Color(0x99F6F1E8), size: 19),
             const Spacer(),
             Text(preset.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFFF6F1E8), fontSize: 15, fontWeight: FontWeight.w900)),
             const SizedBox(height: 2),
@@ -616,11 +616,12 @@ class _SelectedProtocolCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFF252A2F),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0x164C5560)),
+        boxShadow: const [BoxShadow(color: Color(0x08000000), blurRadius: 16, offset: Offset(0, 8))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -628,10 +629,10 @@ class _SelectedProtocolCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(color: const Color(0x1FD4AF37), borderRadius: BorderRadius.circular(16)),
-                child: Icon(preset.icon, color: _workColor, size: 26),
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(color: const Color(0x18D4AF37), borderRadius: BorderRadius.circular(14)),
+                child: Icon(preset.icon, color: _workColor, size: 24),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -656,30 +657,28 @@ class _SelectedProtocolCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 18),
-          Row(
-            children: [
-              Expanded(child: _MetricPill(label: 'Работа', value: _clockLabel(preset.workSeconds))),
-              const SizedBox(width: 10),
-              Expanded(child: _MetricPill(label: 'Отдых', value: _clockLabel(preset.restSeconds))),
-              const SizedBox(width: 10),
-              Expanded(child: _MetricPill(label: 'Раунды', value: '${preset.rounds}')),
+          const SizedBox(height: 16),
+          _ProtocolMetricsStrip(
+            metrics: [
+              _ProtocolMetric(label: 'Работа', value: _clockLabel(preset.workSeconds)),
+              _ProtocolMetric(label: 'Отдых', value: _clockLabel(preset.restSeconds)),
+              _ProtocolMetric(label: 'Раунды', value: '${preset.rounds}'),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-            decoration: BoxDecoration(color: const Color(0xFF1F2429), borderRadius: BorderRadius.circular(16)),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(color: const Color(0xFF1F2429), borderRadius: BorderRadius.circular(14)),
             child: Row(
               children: [
                 const Icon(Icons.hourglass_top_rounded, color: Color(0x99F6F1E8), size: 18),
                 const SizedBox(width: 8),
                 const Expanded(child: Text('Общее время с подготовкой', style: TextStyle(color: Color(0x99F6F1E8), fontSize: 12, fontWeight: FontWeight.w800))),
-                Text(_durationLabel(preset.totalSeconds + _preparationSeconds), style: const TextStyle(color: Color(0xFFF6F1E8), fontSize: 13, fontWeight: FontWeight.w900)),
+                Text(_durationLabel(preset.totalSeconds + _preparationSeconds), style: const TextStyle(color: Color(0xDDF6F1E8), fontSize: 14, fontWeight: FontWeight.w800)),
               ],
             ),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 16),
           SizedBox(
             height: 56,
             width: double.infinity,
@@ -701,25 +700,58 @@ class _SelectedProtocolCard extends StatelessWidget {
   }
 }
 
-class _MetricPill extends StatelessWidget {
-  const _MetricPill({required this.label, required this.value});
+class _ProtocolMetric {
+  const _ProtocolMetric({required this.label, required this.value});
 
   final String label;
   final String value;
+}
+
+class _ProtocolMetricsStrip extends StatelessWidget {
+  const _ProtocolMetricsStrip({required this.metrics});
+
+  final List<_ProtocolMetric> metrics;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-      decoration: BoxDecoration(color: const Color(0xFF1F2429), borderRadius: BorderRadius.circular(16)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1F2429),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0x104C5560)),
+      ),
+      child: Row(
         children: [
-          Text(label, style: const TextStyle(color: Color(0x99F6F1E8), fontSize: 11, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 4),
-          Text(value, style: const TextStyle(color: Color(0xFFF6F1E8), fontSize: 15, fontWeight: FontWeight.w900)),
+          for (var index = 0; index < metrics.length; index++) ...[
+            Expanded(child: _ProtocolMetricColumn(metric: metrics[index])),
+            if (index < metrics.length - 1) Container(width: 1, height: 30, color: const Color(0x144C5560)),
+          ],
         ],
       ),
+    );
+  }
+}
+
+class _ProtocolMetricColumn extends StatelessWidget {
+  const _ProtocolMetricColumn({required this.metric});
+
+  final _ProtocolMetric metric;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          metric.value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(color: Color(0xFFF6F1E8), fontSize: 15, fontWeight: FontWeight.w900),
+        ),
+        const SizedBox(height: 4),
+        Text(metric.label, style: const TextStyle(color: Color(0x8CF6F1E8), fontSize: 11, fontWeight: FontWeight.w800)),
+      ],
     );
   }
 }

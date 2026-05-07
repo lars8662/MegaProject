@@ -67,7 +67,7 @@ ThemeData _buildTheme() {
     ),
     bottomNavigationBarTheme: BottomNavigationBarThemeData(
       selectedItemColor: accent,
-      unselectedItemColor: onSurface.withValues(alpha: 0.65),
+      unselectedItemColor: onSurface.withValues(alpha: 0.48),
       backgroundColor: const Color(0xFF20252A),
       type: BottomNavigationBarType.fixed,
     ),
