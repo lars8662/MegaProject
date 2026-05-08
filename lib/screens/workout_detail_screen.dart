@@ -60,7 +60,7 @@ class WorkoutDetailScreen extends ConsumerWidget {
             const SizedBox(height: 12),
             _StatsGrid(session: session),
             const SizedBox(height: 12),
-            _NotesCard(session: session),
+            if (session.isTimerSession) _TimerDetailsCard(session: session) else _NotesCard(session: session),
             const SizedBox(height: 22),
             const _RemoveSectionLabel(),
             const SizedBox(height: 8),
@@ -205,11 +205,11 @@ class _HeroCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(session.type, style: const TextStyle(color: Color(0xFFF6F1E8), fontSize: 23, fontWeight: FontWeight.w900)),
+                Text(session.displayTitle, style: const TextStyle(color: Color(0xFFF6F1E8), fontSize: 23, fontWeight: FontWeight.w900)),
                 const SizedBox(height: 5),
                 Text(session.formattedDate, style: const TextStyle(color: Color(0xB3F6F1E8), fontSize: 14, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 5),
-                Text(session.location, style: const TextStyle(color: Color(0xFFD4AF37), fontSize: 14, fontWeight: FontWeight.w800)),
+                Text(session.isTimerSession ? '${session.type} · Источник: Таймер' : session.location, style: const TextStyle(color: Color(0xFFD4AF37), fontSize: 14, fontWeight: FontWeight.w800)),
               ],
             ),
           ),
@@ -260,7 +260,10 @@ class _StatsGrid extends StatelessWidget {
         _StatCard(label: 'Длительность', value: session.durationLabel, icon: Icons.timer_outlined),
         _StatCard(label: 'Интенсивность', value: '${session.intensity}/10', icon: Icons.local_fire_department_rounded),
         _StatCard(label: 'Самочувствие', value: session.effort, icon: Icons.favorite_rounded),
-        _StatCard(label: 'Место', value: session.location, icon: Icons.location_on_outlined),
+        if (session.isTimerSession)
+          const _StatCard(label: 'Источник', value: 'Таймер', icon: Icons.timer_outlined)
+        else
+          _StatCard(label: 'Место', value: session.location, icon: Icons.location_on_outlined),
       ],
     );
   }
@@ -295,6 +298,34 @@ class _StatCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFFF6F1E8), fontSize: 20, fontWeight: FontWeight.w900)),
+        ],
+      ),
+    );
+  }
+}
+
+
+class _TimerDetailsCard extends StatelessWidget {
+  const _TimerDetailsCard({required this.session});
+
+  final TrainingSession session;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFF252A2F),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0x164C5560)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Параметры таймера', style: TextStyle(color: Color(0x99F6F1E8), fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.4)),
+          const SizedBox(height: 10),
+          Text(session.detail, style: const TextStyle(color: Color(0xDFF6F1E8), fontSize: 15, fontWeight: FontWeight.w800, height: 1.35)),
         ],
       ),
     );

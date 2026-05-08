@@ -430,7 +430,7 @@ class _WorkoutEntry {
     return _WorkoutEntry(
       id: session.id,
       date: session.formattedDate,
-      type: '${session.type} · ${session.location}',
+      type: session.isTimerSession ? '${session.displayTitle} · ${session.type}' : '${session.type} · ${session.location}',
       detail: session.detail,
       meta: session.meta,
       durationBadge: session.durationLabel,
