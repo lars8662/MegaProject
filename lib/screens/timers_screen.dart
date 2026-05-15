@@ -277,7 +277,7 @@ class _TimersScreenState extends ConsumerState<TimersScreen> {
         _remainingSeconds = 0;
         _isRunning = false;
       });
-      _promptSaveFinishedSession();
+      unawaited(_promptSaveFinishedSession());
       return;
     }
 
@@ -345,7 +345,9 @@ class _TimersScreenState extends ConsumerState<TimersScreen> {
       return;
     }
 
-    await ref.read(trainingSessionsProvider.notifier).addSession(_sessionFromFinishedTimer());
+    final session = _sessionFromFinishedTimer();
+
+    await ref.read(trainingSessionsProvider.notifier).addSession(session);
 
     if (!mounted) {
       return;
