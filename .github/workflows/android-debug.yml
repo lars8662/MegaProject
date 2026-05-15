@@ -69,8 +69,28 @@ jobs:
       - name: Test
         run: flutter test
 
+      - name: Restore persistent debug keystore
+        env:
+          ANDROID_DEBUG_KEYSTORE_BASE64: ${{ secrets.ANDROID_DEBUG_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+
+          # GitHub-hosted runners create different default debug keystores on each run.
+          # Restoring one persistent debug.keystore lets internal/manual APK artifacts
+          # install as updates over previous artifacts instead of requiring uninstall first.
+          if [ -z "${ANDROID_DEBUG_KEYSTORE_BASE64:-}" ]; then
+            echo "ANDROID_DEBUG_KEYSTORE_BASE64 secret is required to sign debug APK artifacts consistently." >&2
+            exit 1
+          fi
+
+          # The secret must contain a base64-encoded debug.keystore generated once.
+          # This is only for internal/manual APK testing, not final Play Store signing.
+          mkdir -p "$HOME/.android"
+          printf '%s' "$ANDROID_DEBUG_KEYSTORE_BASE64" | base64 --decode > "$HOME/.android/debug.keystore"
+          chmod 600 "$HOME/.android/debug.keystore"
+
       - name: Build debug APK
-        run: flutter build apk --debug
+        run: flutter build apk --debug --build-number ${{ github.run_number }}
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
