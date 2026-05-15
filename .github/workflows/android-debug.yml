@@ -64,13 +64,32 @@ jobs:
         run: |
           set -euo pipefail
 
-          python3 <<'PY'
+          if [ -f android/app/build.gradle ]; then
+            gradle_file="android/app/build.gradle"
+            gradle_syntax="groovy"
+          elif [ -f android/app/build.gradle.kts ]; then
+            gradle_file="android/app/build.gradle.kts"
+            gradle_syntax="kotlin"
+          else
+            echo "Could not find android/app/build.gradle or android/app/build.gradle.kts after regenerating android/." >&2
+            echo "Files found under android/:" >&2
+            find android -maxdepth 4 -type f | sort >&2 || true
+            exit 1
+          fi
+
+          GRADLE_FILE="$gradle_file" GRADLE_SYNTAX="$gradle_syntax" python3 <<'PY'
+          import os
           from pathlib import Path
 
-          path = Path("android/app/build.gradle")
+          path = Path(os.environ["GRADLE_FILE"])
+          syntax = os.environ["GRADLE_SYNTAX"]
           text = path.read_text()
 
-          signing_config = """
+          if "$HOME/.android/debug.keystore" in text:
+              raise SystemExit(f"{path} should reference the runner home through Gradle, not a literal shell path")
+
+          if syntax == "groovy":
+              signing_config = """
               signingConfigs {
                   debug {
                       storeFile file("${System.properties['user.home']}/.android/debug.keystore")
@@ -80,27 +99,45 @@ jobs:
                   }
               }
           """
-
-          debug_build_type = """
+              debug_build_type = """
                   debug {
                       signingConfig signingConfigs.debug
                   }
           """
+              signing_marker = "storeFile file(\"${System.properties['user.home']}/.android/debug.keystore\")"
+              debug_marker = "signingConfig signingConfigs.debug"
+              build_types_marker = "    buildTypes {"
+          elif syntax == "kotlin":
+              signing_config = """
+              signingConfigs {
+                  getByName(\"debug\") {
+                      storeFile = file(\"${System.getProperty(\"user.home\")}/.android/debug.keystore\")
+                      storePassword = \"android\"
+                      keyAlias = \"androiddebugkey\"
+                      keyPassword = \"android\"
+                  }
+              }
+          """
+              debug_build_type = """
+                  getByName(\"debug\") {
+                      signingConfig = signingConfigs.getByName(\"debug\")
+                  }
+          """
+              signing_marker = 'storeFile = file("${System.getProperty("user.home")}/.android/debug.keystore")'
+              debug_marker = 'getByName("debug") {\n                      signingConfig = signingConfigs.getByName("debug")'
+              build_types_marker = "    buildTypes {"
+          else:
+              raise SystemExit(f"Unsupported Gradle syntax: {syntax}")
 
-          if "$HOME/.android/debug.keystore" in text:
-              raise SystemExit("android/app/build.gradle should reference the runner home through Gradle, not a literal shell path")
+          if signing_marker not in text:
+              if build_types_marker not in text:
+                  raise SystemExit(f"Could not find {build_types_marker!r} in {path}")
+              text = text.replace(build_types_marker, signing_config + "\n" + build_types_marker, 1)
 
-          if "storeFile file(\"${System.properties['user.home']}/.android/debug.keystore\")" not in text:
-              marker = "    buildTypes {"
-              if marker not in text:
-                  raise SystemExit(f"Could not find {marker!r} in android/app/build.gradle")
-              text = text.replace(marker, signing_config + "\n" + marker, 1)
-
-          if "signingConfig signingConfigs.debug" not in text:
-              marker = "    buildTypes {"
-              if marker not in text:
-                  raise SystemExit(f"Could not find {marker!r} in android/app/build.gradle")
-              text = text.replace(marker, marker + debug_build_type, 1)
+          if debug_marker not in text:
+              if build_types_marker not in text:
+                  raise SystemExit(f"Could not find {build_types_marker!r} in {path}")
+              text = text.replace(build_types_marker, build_types_marker + debug_build_type, 1)
 
           path.write_text(text)
           PY
