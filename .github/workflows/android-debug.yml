@@ -193,29 +193,52 @@ jobs:
             exit 1
           fi
 
-          apk_sha256="$("$apksigner" verify --print-certs "$apk_path" \
-            | awk -F': ' '/certificate SHA-256 digest/ {print $2; exit}')"
-          keystore_sha256="$(keytool -list -v -keystore "$keystore_path" -storepass android -alias androiddebugkey 2>/dev/null \
-            | awk -F': ' '/SHA256:/ {print $2; exit}')"
+          apksigner_output="$("$apksigner" verify --print-certs "$apk_path")"
+          keytool_output="$(keytool -list -v -keystore "$keystore_path" -storepass android -alias androiddebugkey 2>/dev/null)"
+
+          echo "Relevant apksigner certificate lines:"
+          printf '%s\n' "$apksigner_output" | sed -n '/certificate SHA-256 digest/Ip'
+
+          apk_sha256="$(printf '%s\n' "$apksigner_output" \
+            | sed -n 's/.*certificate SHA-256 digest:[[:space:]]*//Ip' \
+            | head -n 1)"
+          keystore_sha256="$(printf '%s\n' "$keytool_output" \
+            | sed -n 's/^[[:space:]]*SHA256:[[:space:]]*//Ip' \
+            | head -n 1)"
 
           if [ -z "$apk_sha256" ]; then
-            echo "Could not read APK signer SHA-256 fingerprint." >&2
+            echo "Could not parse APK signer SHA-256 fingerprint from apksigner output." >&2
             exit 1
           fi
 
           if [ -z "$keystore_sha256" ]; then
-            echo "Could not read CI debug keystore SHA-256 fingerprint." >&2
+            echo "Could not parse CI debug keystore SHA-256 fingerprint from keytool output." >&2
             exit 1
           fi
 
           echo "APK signer SHA-256: $apk_sha256"
           echo "CI debug keystore SHA-256: $keystore_sha256"
 
-          normalized_apk_sha256="$(printf '%s' "$apk_sha256" | tr -d ':' | tr '[:upper:]' '[:lower:]')"
-          normalized_keystore_sha256="$(printf '%s' "$keystore_sha256" | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          normalized_apk_sha256="$(printf '%s' "$apk_sha256" | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]')"
+          normalized_keystore_sha256="$(printf '%s' "$keystore_sha256" | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]')"
+
+          if [ -z "$normalized_apk_sha256" ]; then
+            echo "Normalized APK signer SHA-256 fingerprint is empty." >&2
+            exit 1
+          fi
+
+          if [ -z "$normalized_keystore_sha256" ]; then
+            echo "Normalized CI debug keystore SHA-256 fingerprint is empty." >&2
+            exit 1
+          fi
+
+          echo "Normalized APK signer SHA-256: $normalized_apk_sha256"
+          echo "Normalized CI debug keystore SHA-256: $normalized_keystore_sha256"
 
           if [ "$normalized_apk_sha256" != "$normalized_keystore_sha256" ]; then
             echo "APK signer SHA-256 does not match CI debug keystore SHA-256." >&2
+            echo "Normalized APK signer SHA-256: $normalized_apk_sha256" >&2
+            echo "Normalized CI debug keystore SHA-256: $normalized_keystore_sha256" >&2
             exit 1
           fi
 
