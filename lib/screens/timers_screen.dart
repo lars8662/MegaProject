@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../models/custom_timer_protocol.dart';
+import '../models/timer_training_session_mapper.dart';
 import '../models/training_session.dart';
 import '../state/custom_timer_protocols_provider.dart';
 import '../state/training_sessions_provider.dart';
@@ -356,27 +357,18 @@ class _TimersScreenState extends ConsumerState<TimersScreen> {
   }
 
   TrainingSession _sessionFromFinishedTimer() {
-    final totalMinutes = (_totalSeconds + 59) ~/ 60;
-
-    final isCustom = _preset.isCustom;
-
-    return TrainingSession(
+    return trainingSessionFromFinishedTimer(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
-      type: _sessionTypeForPreset(_preset),
       date: DateTime.now(),
-      durationMinutes: totalMinutes,
-      location: isCustom ? '' : 'Таймер',
-      intensity: _intensityForPreset(_preset),
-      effort: 'Норма',
-      notes: isCustom ? '' : 'Завершён таймер: ${_preset.title}. Работа: ${_clockLabel(_preset.workSeconds)}, отдых: ${_clockLabel(_preset.restSeconds)}, раунды: ${_preset.rounds}.',
-      exerciseName: isCustom ? _preset.title : null,
-      source: isCustom ? 'timer' : null,
-      rounds: isCustom ? _preset.rounds : null,
-      repsPerRound: isCustom ? _preset.repsPerRound : null,
-      extraWeightKg: isCustom ? _preset.extraWeightKg : null,
-      workSeconds: isCustom ? _preset.workSeconds : null,
-      restSeconds: isCustom ? _preset.restSeconds : null,
-      preparationSeconds: isCustom ? _preset.preparationSeconds : null,
+      timerTitle: _preset.title,
+      isCustom: _preset.isCustom,
+      totalSeconds: _totalSeconds,
+      workSeconds: _preset.workSeconds,
+      restSeconds: _preset.restSeconds,
+      rounds: _preset.rounds,
+      preparationSeconds: _preset.preparationSeconds,
+      repsPerRound: _preset.repsPerRound,
+      extraWeightKg: _preset.extraWeightKg,
     );
   }
 
@@ -1691,30 +1683,6 @@ Color _stageColor(_TimerStage stage) {
   }
 
   return _restColor;
-}
-
-String _sessionTypeForPreset(_TimerPreset preset) {
-  if (preset.isCustom) {
-    return 'ОФП';
-  }
-
-  if (preset.title.contains('ARC')) {
-    return 'Трудность';
-  }
-
-  return 'Фингерборд';
-}
-
-int _intensityForPreset(_TimerPreset preset) {
-  if (preset.title == 'Max Hang') {
-    return 8;
-  }
-
-  if (preset.title.contains('ARC')) {
-    return 4;
-  }
-
-  return 7;
 }
 
 String _clockLabel(int secondsTotal) {
