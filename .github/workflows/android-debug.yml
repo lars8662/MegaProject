@@ -60,6 +60,88 @@ jobs:
           class MainActivity : FlutterActivity()
           EOF
 
+      - name: Configure debug APK signing
+        run: |
+          set -euo pipefail
+
+          if [ -f android/app/build.gradle ]; then
+            gradle_file="android/app/build.gradle"
+            gradle_syntax="groovy"
+          elif [ -f android/app/build.gradle.kts ]; then
+            gradle_file="android/app/build.gradle.kts"
+            gradle_syntax="kotlin"
+          else
+            echo "Could not find android/app/build.gradle or android/app/build.gradle.kts after regenerating android/." >&2
+            echo "Files found under android/:" >&2
+            find android -maxdepth 4 -type f | sort >&2 || true
+            exit 1
+          fi
+
+          GRADLE_FILE="$gradle_file" GRADLE_SYNTAX="$gradle_syntax" python3 <<'PY'
+          import os
+          from pathlib import Path
+
+          path = Path(os.environ["GRADLE_FILE"])
+          syntax = os.environ["GRADLE_SYNTAX"]
+          text = path.read_text()
+
+          if "$HOME/.android/debug.keystore" in text:
+              raise SystemExit(f"{path} should reference the runner home through Gradle, not a literal shell path")
+
+          if syntax == "groovy":
+              signing_config = """
+              signingConfigs {
+                  debug {
+                      storeFile file("${System.properties['user.home']}/.android/debug.keystore")
+                      storePassword 'android'
+                      keyAlias 'androiddebugkey'
+                      keyPassword 'android'
+                  }
+              }
+          """
+              debug_build_type = """
+                  debug {
+                      signingConfig signingConfigs.debug
+                  }
+          """
+              signing_marker = "storeFile file(\"${System.properties['user.home']}/.android/debug.keystore\")"
+              debug_marker = "signingConfig signingConfigs.debug"
+              build_types_marker = "    buildTypes {"
+          elif syntax == "kotlin":
+              signing_config = """
+              signingConfigs {
+                  getByName(\"debug\") {
+                      storeFile = file(\"${System.getProperty(\"user.home\")}/.android/debug.keystore\")
+                      storePassword = \"android\"
+                      keyAlias = \"androiddebugkey\"
+                      keyPassword = \"android\"
+                  }
+              }
+          """
+              debug_build_type = """
+                  getByName(\"debug\") {
+                      signingConfig = signingConfigs.getByName(\"debug\")
+                  }
+          """
+              signing_marker = 'storeFile = file("${System.getProperty("user.home")}/.android/debug.keystore")'
+              debug_marker = 'getByName("debug") {\n                      signingConfig = signingConfigs.getByName("debug")'
+              build_types_marker = "    buildTypes {"
+          else:
+              raise SystemExit(f"Unsupported Gradle syntax: {syntax}")
+
+          if signing_marker not in text:
+              if build_types_marker not in text:
+                  raise SystemExit(f"Could not find {build_types_marker!r} in {path}")
+              text = text.replace(build_types_marker, signing_config + "\n" + build_types_marker, 1)
+
+          if debug_marker not in text:
+              if build_types_marker not in text:
+                  raise SystemExit(f"Could not find {build_types_marker!r} in {path}")
+              text = text.replace(build_types_marker, build_types_marker + debug_build_type, 1)
+
+          path.write_text(text)
+          PY
+
       - name: Install dependencies
         run: flutter pub get
 
@@ -91,6 +173,74 @@ jobs:
 
       - name: Build debug APK
         run: flutter build apk --debug --build-number ${{ github.run_number }}
+
+      - name: Diagnose APK signing certificate
+        run: |
+          set -euo pipefail
+
+          apk_path="build/app/outputs/flutter-apk/app-debug.apk"
+          keystore_path="$HOME/.android/debug.keystore"
+          sdk_root="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+
+          if [ -z "$sdk_root" ]; then
+            echo "ANDROID_HOME or ANDROID_SDK_ROOT is required to locate apksigner." >&2
+            exit 1
+          fi
+
+          apksigner="$(find "$sdk_root/build-tools" -maxdepth 2 -type f -name apksigner | sort -V | tail -n 1)"
+          if [ -z "$apksigner" ]; then
+            echo "Could not find apksigner in Android SDK build-tools." >&2
+            exit 1
+          fi
+
+          apksigner_output="$("$apksigner" verify --print-certs "$apk_path")"
+          keytool_output="$(keytool -list -v -keystore "$keystore_path" -storepass android -alias androiddebugkey 2>/dev/null)"
+
+          echo "Relevant apksigner certificate lines:"
+          printf '%s\n' "$apksigner_output" | sed -n '/certificate SHA-256 digest/Ip'
+
+          apk_sha256="$(printf '%s\n' "$apksigner_output" \
+            | sed -n 's/.*certificate SHA-256 digest:[[:space:]]*//Ip' \
+            | head -n 1)"
+          keystore_sha256="$(printf '%s\n' "$keytool_output" \
+            | sed -n 's/^[[:space:]]*SHA256:[[:space:]]*//Ip' \
+            | head -n 1)"
+
+          if [ -z "$apk_sha256" ]; then
+            echo "Could not parse APK signer SHA-256 fingerprint from apksigner output." >&2
+            exit 1
+          fi
+
+          if [ -z "$keystore_sha256" ]; then
+            echo "Could not parse CI debug keystore SHA-256 fingerprint from keytool output." >&2
+            exit 1
+          fi
+
+          echo "APK signer SHA-256: $apk_sha256"
+          echo "CI debug keystore SHA-256: $keystore_sha256"
+
+          normalized_apk_sha256="$(printf '%s' "$apk_sha256" | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]')"
+          normalized_keystore_sha256="$(printf '%s' "$keystore_sha256" | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]')"
+
+          if [ -z "$normalized_apk_sha256" ]; then
+            echo "Normalized APK signer SHA-256 fingerprint is empty." >&2
+            exit 1
+          fi
+
+          if [ -z "$normalized_keystore_sha256" ]; then
+            echo "Normalized CI debug keystore SHA-256 fingerprint is empty." >&2
+            exit 1
+          fi
+
+          echo "Normalized APK signer SHA-256: $normalized_apk_sha256"
+          echo "Normalized CI debug keystore SHA-256: $normalized_keystore_sha256"
+
+          if [ "$normalized_apk_sha256" != "$normalized_keystore_sha256" ]; then
+            echo "APK signer SHA-256 does not match CI debug keystore SHA-256." >&2
+            echo "Normalized APK signer SHA-256: $normalized_apk_sha256" >&2
+            echo "Normalized CI debug keystore SHA-256: $normalized_keystore_sha256" >&2
+            exit 1
+          fi
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
