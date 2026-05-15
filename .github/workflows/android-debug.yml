@@ -92,6 +92,51 @@ jobs:
       - name: Build debug APK
         run: flutter build apk --debug --build-number ${{ github.run_number }}
 
+      - name: Diagnose APK identity and signing
+        run: |
+          set -euo pipefail
+
+          APK_PATH="build/app/outputs/flutter-apk/app-debug.apk"
+          DEBUG_KEYSTORE="$HOME/.android/debug.keystore"
+
+          if [ ! -f "$APK_PATH" ]; then
+            echo "Expected APK does not exist: $APK_PATH" >&2
+            exit 1
+          fi
+
+          echo "== APK package/version info =="
+          AAPT_BIN="$(command -v aapt || true)"
+          if [ -z "$AAPT_BIN" ] && [ -n "${ANDROID_HOME:-}" ]; then
+            AAPT_BIN="$(find "$ANDROID_HOME/build-tools" -name aapt -type f 2>/dev/null | sort -V | tail -n 1 || true)"
+          fi
+          if [ -n "$AAPT_BIN" ]; then
+            "$AAPT_BIN" dump badging "$APK_PATH" | sed -n '/^package: /p'
+          else
+            echo "aapt not found; skipping APK badging/package diagnostics."
+          fi
+
+          echo "== APK signer certificate SHA-256 =="
+          APKSIGNER_BIN="$(command -v apksigner || true)"
+          if [ -z "$APKSIGNER_BIN" ] && [ -n "${ANDROID_HOME:-}" ]; then
+            APKSIGNER_BIN="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f 2>/dev/null | sort -V | tail -n 1 || true)"
+          fi
+          if [ -z "$APKSIGNER_BIN" ]; then
+            echo "apksigner not found; cannot print APK signing certificate diagnostics." >&2
+            exit 1
+          fi
+          "$APKSIGNER_BIN" verify --print-certs "$APK_PATH" | sed -n '/SHA-256/p'
+
+          echo "== CI debug keystore certificate SHA-256 =="
+          if [ ! -f "$DEBUG_KEYSTORE" ]; then
+            echo "Expected debug keystore does not exist: $DEBUG_KEYSTORE" >&2
+            exit 1
+          fi
+          keytool -list -v \
+            -keystore "$DEBUG_KEYSTORE" \
+            -storepass android \
+            -alias androiddebugkey \
+            | sed -n '/SHA256:/p'
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
