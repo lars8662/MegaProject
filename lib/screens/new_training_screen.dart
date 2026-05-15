@@ -80,7 +80,7 @@ class _NewTrainingScreenState extends ConsumerState<NewTrainingScreen> {
     }
   }
 
-  void _saveTraining() {
+  Future<void> _saveTraining() async {
     final selectedType = _types[_selectedTypeIndex].label;
     final durationMinutes = int.tryParse(_durationController.text.trim());
 
@@ -105,7 +105,9 @@ class _NewTrainingScreenState extends ConsumerState<NewTrainingScreen> {
       notes: notes,
     );
 
-    ref.read(trainingSessionsProvider.notifier).addSession(session);
+    await ref.read(trainingSessionsProvider.notifier).addSession(session);
+
+    if (!mounted) return;
 
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
